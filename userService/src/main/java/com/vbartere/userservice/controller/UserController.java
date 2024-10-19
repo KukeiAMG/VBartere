@@ -50,6 +50,12 @@ public class UserController {
         boolean isRegistered = userService.isPhoneNumberRegistered(phoneNumber);
         return ResponseEntity.ok(isRegistered);
     }
+
+    @PostMapping("/{userId}/roles")
+    public ResponseEntity<User> assignRole(@PathVariable Long userId, @RequestParam String roleName) {
+        User user = userService.assignRoleToUser(userId, roleName);
+        return ResponseEntity.ok(user);
+    }
 }
 
 

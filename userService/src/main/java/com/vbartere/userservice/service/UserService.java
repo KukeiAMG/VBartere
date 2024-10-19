@@ -1,8 +1,11 @@
 package com.vbartere.userservice.service;
 
+import com.vbartere.userservice.model.Role;
 import com.vbartere.userservice.model.User;
+import com.vbartere.userservice.repository.RoleRepository;
 import com.vbartere.userservice.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
 
@@ -11,17 +14,22 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final RoleRepository roleRepository;
 
     @Autowired
-    public UserService(UserRepository userRepository, JwtService jwtService) {
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.roleRepository = roleRepository;
     }
 
     public String loginUser(String phoneNumber, String password) {
         User user = userRepository.findByPhoneNumber(phoneNumber)
                 .filter(u -> u.getPassword().equals(password))
-                .orElseThrow(() -> new IllegalArgumentException("Неверный номер телефона или пароль"));
+                .orElseThrow(() -> new IllegalArgumentException("wrong phone number or password"));
 
         // Генерация JWT токена
         return jwtService.generateToken(user.getPhoneNumber());
@@ -29,17 +37,34 @@ public class UserService {
 
     public User registerUser(String phoneNumber, String password) {
         if (userRepository.findByPhoneNumber(phoneNumber).isPresent()) {
-            throw new IllegalArgumentException("Пользователь с таким номером телефона уже существует");
+            throw new IllegalArgumentException("user already exists");
         }
         User user = new User();
         user.setPhoneNumber(phoneNumber);
-        user.setPassword(password);
+        user.setPassword(passwordEncoder.encode(password));
+        return userRepository.save(user);
+    }
+
+    public User assignRoleToUser(Long userId, String roleName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
+        Role role = roleRepository.findByName(roleName);
+        if (role == null) {
+            throw new IllegalArgumentException("role not found");
+        }
+
+        if (user.getRoles().contains(role)) {
+            throw new IllegalArgumentException("user already has this role");
+        }
+
+        user.getRoles().add(role);
         return userRepository.save(user);
     }
 
     public User updateUserDetails(Long userId, String name, String surname) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
         user.setName(name);
         user.setSurname(surname);
         return userRepository.save(user);
