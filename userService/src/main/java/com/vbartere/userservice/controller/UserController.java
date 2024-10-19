@@ -5,6 +5,7 @@ import com.vbartere.userservice.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -16,7 +17,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    // Регистрация пользователя
     @PostMapping("/register")
     public ResponseEntity<User> registerUser(@RequestBody Map<String, String> userDto) {
         String phoneNumber = userDto.get("phoneNumber");
@@ -25,16 +25,18 @@ public class UserController {
         return ResponseEntity.ok(registeredUser);
     }
 
-    // Логин пользователя
     @PostMapping("/login")
-    public ResponseEntity<User> loginUser(@RequestBody Map<String, String> userDto) {
+    public ResponseEntity<Map<String, String>> loginUser(@RequestBody Map<String, String> userDto) {
         String phoneNumber = userDto.get("phoneNumber");
         String password = userDto.get("password");
-        User loggedInUser = userService.loginUser(phoneNumber, password);
-        return ResponseEntity.ok(loggedInUser);
+
+        String token = userService.loginUser(phoneNumber, password);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("token", token);
+        return ResponseEntity.ok(response);
     }
 
-    // Обновление данных пользователя
     @PutMapping("/{userId}")
     public ResponseEntity<User> updateUserDetails(@PathVariable Long userId, @RequestBody Map<String, String> userDetails) {
         String name = userDetails.get("name");
@@ -43,7 +45,6 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
-    // Проверка, зарегистрирован ли номер телефона
     @GetMapping("/check-phone")
     public ResponseEntity<Boolean> checkPhoneNumber(@RequestParam String phoneNumber) {
         boolean isRegistered = userService.isPhoneNumberRegistered(phoneNumber);

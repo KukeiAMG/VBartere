@@ -10,10 +10,21 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final JwtService jwtService;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, JwtService jwtService) {
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
+    }
+
+    public String loginUser(String phoneNumber, String password) {
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .filter(u -> u.getPassword().equals(password))
+                .orElseThrow(() -> new IllegalArgumentException("Неверный номер телефона или пароль"));
+
+        // Генерация JWT токена
+        return jwtService.generateToken(user.getPhoneNumber());
     }
 
     public User registerUser(String phoneNumber, String password) {
@@ -25,13 +36,6 @@ public class UserService {
         user.setPassword(password);
         return userRepository.save(user);
     }
-
-    public User loginUser(String phoneNumber, String password) {
-        return userRepository.findByPhoneNumber(phoneNumber)
-                .filter(user -> user.getPassword().equals(password))
-                .orElseThrow(() -> new IllegalArgumentException("Неверный номер телефона или пароль"));
-    }
-
 
     public User updateUserDetails(Long userId, String name, String surname) {
         User user = userRepository.findById(userId)
