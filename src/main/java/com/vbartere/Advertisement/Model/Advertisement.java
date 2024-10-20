@@ -35,15 +35,18 @@ public class Advertisement {
     @OneToMany(mappedBy = "advertisement", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     private List<Image> imageList;
 
+    private Long userId; // id пользователя из UserService
+
     private boolean status;
 
     public Advertisement() {}
 
-    public Advertisement(String title, String description, SubCategory subcategory, List<Image> imageList, boolean status) {
+    public Advertisement(String title, String description, SubCategory subcategory, List<Image> imageList, Long userId, boolean status) {
         this.title = title;
         this.description = description;
         this.subcategory = subcategory;
         this.imageList = imageList;
+        this.userId = userId;
         this.status = status;
     }
 
@@ -53,8 +56,9 @@ public class Advertisement {
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
-                ", subCategory=" + subcategory +
+                ", subcategory=" + subcategory +
                 ", imageList=" + imageList +
+                ", UserId=" + userId +
                 ", status=" + status +
                 '}';
     }

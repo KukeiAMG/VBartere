@@ -32,12 +32,12 @@ public class Category {
         this.subCategoryList = subCategoryList;
     }
 
-    @Override
-    public String toString() {
-        return "Category{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", subCategoryList=" + subCategoryList +
-                '}';
-    }
+//    @Override
+//    public String toString() {
+//        return "Category{" +
+//                "id=" + id +
+//                ", name='" + name + '\'' +
+//                ", subCategoryList=" + subCategoryList +
+//                '}';
+//    }
 }

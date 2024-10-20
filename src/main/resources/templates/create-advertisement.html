@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Advertisement</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <h1 class="mt-4">Create Advertisement</h1>
+
+    <form th:action="@{/advertisements}" method="post" enctype="multipart/form-data" th:object="${advertisementDTO}">
+        <div class="form-group">
+            <label for="title">Title:</label>
+            <input type="text" id="title" th:field="*{title}" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea id="description" th:field="*{description}" class="form-control" required></textarea>
+        </div>
+
+
+
+        <div class= "form-group">
+            <label for= "categoryId">Category:</label>
+            <select id= "categoryId"
+                    name= "categoryId"
+                    th:field= "*{categoryId}"
+                    class= "form-control"
+                    th:onchange="
+var selectedCategory=this.options[this.selectedIndex].value;
+fetch('/api/categories/'+selectedCategory+'/subcategories')
+.then(response=>response.json())
+.then(data=>{ var subCategorySelect=document.getElementById('subCategoryId');
+subCategorySelect.innerHTML='';
+data.forEach(subcategory=>{
+var option=document.createElement('option');
+option.value=subcategory.id;
+option.textContent=subcategory.name;
+subCategorySelect.appendChild(option); }); }); ">
+                <option value="" disabled selected>Select Category</option> <option th:each= "category : ${categories}"
+                                                                                    th:value= "${category.id}"
+                                                                                    th:text= "${category.name}"></option >
+            </select >
+        </div >
+
+        <div class= "form-group">
+            <label for= "subCategoryId">SubCategory:</label>
+            <select id= "subCategoryId"
+                    name= "subCategoryId"
+                    th:field= "*{subCategoryId}"
+                    class= "form-control">
+                <!-- Подкатегории загружаются динамически через JavaScript -->
+                <option value="" disabled selected>Select SubCategory</option> </select >
+        </div >
+
+        <!-- Поле для загрузки изображений -->
+        <div class= "
+        group ">
+
+        <label for= "
+    s "> Images: </label >
+
+    <input type="
+    e "
+
+    id="
+    s "
+
+    name="
+    s[] "
+           class="control-file ">
+
+
+</div >
+
+
+
+<!-- Поле для ввода ID пользователя -->
+
+
+
+<!-- В реальном приложении это может быть скрытое поле или выбор из списка пользователей -->
+
+
+
+<input type="hidden "
+
+id="
+d "
+
+th:field="
+d ">
+
+
+
+<button type ="submit"class ="btn btn-primary ">Create</button>
+
+
+</form >
+
+<!-- Отображение ошибки, если она возникла -->
+<div th:if="${error}">
+    <p th:text="${error}"style ="color:red;"></p >
+</div >
+
+<script src="//code.jquery.com/jquery-3.5.1.min.js"></script >
+<script>
+    // Пример динамической загрузки категорий и подкатегорий через AJAX
+    $(document).ready(function() {
+    // Загрузка категорий
+    $.getJSON("/api/categories", function(data) {
+    var categorySelect=$("#categoryId");
+    categorySelect.append('<option value="">Select Category</option>');
+    $.each(data,function(key, category) {
+    categorySelect.append('<option value="' + category.id + '">' + category.name + '</option>');
+    });
+    });
+
+    // Загрузка подкатегорий при изменении категории
+    $("#categoryId").change(function() {
+    var categoryId=$(this).val();
+    var subCategorySelect=$("#subCategoryId");
+
+    if(categoryId) {
+    $.getJSON("/api/categories/" + categoryId + "/subcategories",function(data) {
+    subCategorySelect.empty();
+    subCategorySelect.append('<option value="">Select SubCategory</option>');
+    $.each(data,function(key, subcategory) {
+    subCategorySelect.append('<option value="' + subcategory.id + '">' + subcategory.name + '</option>');
+    });
+    });
+    }else{
+    subCategorySelect.empty();
+    subCategorySelect.append('<option value="">Select SubCategory</option>');
+    }
+    });
+    });
+</script >
+
+</div >
+</body >

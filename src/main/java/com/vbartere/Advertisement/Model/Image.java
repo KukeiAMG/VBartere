@@ -1,7 +1,6 @@
 package com.vbartere.Advertisement.Model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -37,13 +37,13 @@ public class SubCategory {
         this.advertisementList = advertisementList;
     }
 
-    @Override
-    public String toString() {
-        return "SubCategory{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", parentCategory=" + parentCategory +
-                ", advertisementList=" + advertisementList +
-                '}';
-    }
+//    @Override
+//    public String toString() {
+//        return "SubCategory{" +
+//                "id=" + id +
+//                ", name='" + name + '\'' +
+//                ", parentCategory=" + parentCategory +
+//                ", advertisementList=" + advertisementList +
+//                '}';
+//    }
 }
