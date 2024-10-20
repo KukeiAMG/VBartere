@@ -16,7 +16,6 @@
     <description>vHuye</description>
     <url/>
     <modules>
-        <module>AdvertisementService</module>
     </modules>
     <licenses>
         <license/>
