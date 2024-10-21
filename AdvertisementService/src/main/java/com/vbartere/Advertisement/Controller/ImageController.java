@@ -15,17 +15,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/images")
 public class ImageController {
-    private final ImageRepository imageRepository;
     private final ImageService imageService;
 
-    public ImageController(ImageRepository imageRepository, ImageService imageService) {
-        this.imageRepository = imageRepository;
+    public ImageController(ImageService imageService) {
         this.imageService = imageService;
     }
 
     @GetMapping("/{id}")
     private ResponseEntity<?> getImageById(@PathVariable("id") Long id) {
-        Image image = imageRepository.findById(id).orElse(null);
+        Image image = imageService.getImageById(id);
         assert image != null;
         return ResponseEntity.ok()
                 .header("fileName", image.getOriginalFileName())
