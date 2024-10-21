@@ -59,7 +59,11 @@ public class AdvertisementService {
             image.setAdvertisement(advertisement);
             images.add(image);
         }
-        images.getFirst().setPreviewImage(true);
+
+        if (!images.isEmpty()) {
+            images.getFirst().setPreviewImage(true);
+            advertisement.setImageList(images);
+        }
 
         advertisement.setImageList(images);
 
@@ -67,13 +71,36 @@ public class AdvertisementService {
     }
 
     @Transactional
-    public void updateAdvertisementById(Long id, Advertisement advertisement) {
-        Advertisement updatedAdvertisement = getAdvertisementById(id);
-        if (updatedAdvertisement != null) {
-            updatedAdvertisement.setTitle(advertisement.getTitle());
-            updatedAdvertisement.setDescription(advertisement.getDescription());
-            updatedAdvertisement.setSubcategory(advertisement.getSubcategory());
-            updatedAdvertisement.setImageList(advertisement.getImageList());
+    public Advertisement updateAdvertisementById(Long adId, AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException {
+        Advertisement advertisement = advertisementRepository.findById(adId)
+                .orElseThrow(() -> new RuntimeException("Объявление не найдено"));
+
+        SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
+                .orElseThrow(() -> new RuntimeException("Подкатегория не найдена"));
+
+        advertisement.setTitle(advertisementDTO.getTitle());
+        advertisement.setDescription(advertisementDTO.getDescription());
+        advertisement.setSubcategory(subCategory);
+        advertisement.setOwnerId(advertisementDTO.getOwnerId());
+        advertisement.setStatus(advertisementDTO.isStatus());
+
+        List<Image> images = new ArrayList<>();
+        for (MultipartFile file : files) {
+            Image image = imageService.createImage(file);
+            image.setAdvertisement(advertisement);
+            images.add(image);
         }
+
+        if (!images.isEmpty()) {
+            images.getFirst().setPreviewImage(true);
+            advertisement.setImageList(images);
+        }
+
+        return advertisementRepository.save(advertisement);
+    }
+
+    @Transactional
+    public void deleteAdvertisementById(Long id) {
+        advertisementRepository.deleteById(id);
     }
 }

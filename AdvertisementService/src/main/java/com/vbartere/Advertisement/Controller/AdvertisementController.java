@@ -24,6 +24,11 @@ public class AdvertisementController {
         return ResponseEntity.ok(advertisementList);
     }
 
+    @GetMapping("/{id}")
+    public Advertisement getAdvertisement(@PathVariable Long id) {
+        return advertisementService.getAdvertisementById(id);
+    }
+
     @PostMapping(value = "/create", consumes = {"multipart/form-data"})
     public ResponseEntity<Advertisement> createAdvertisement(@RequestPart("advertisement") AdvertisementDTO advertisementDTO,
                                                              @RequestPart("files") List<MultipartFile> files) {
@@ -35,8 +40,25 @@ public class AdvertisementController {
         }
     }
 
-    @GetMapping("/{id}")
-    public Advertisement getAdvertisement(@PathVariable Long id) {
-        return advertisementService.getAdvertisementById(id);
+    @PutMapping(value = "/{id}/update", consumes = {"multipart/form-data"})
+    public ResponseEntity<Advertisement> updateAdvertisement(@PathVariable Long id,
+                                                             @RequestPart("advertisement") AdvertisementDTO advertisementDTO,
+                                                             @RequestPart("files") List<MultipartFile> files) {
+        try {
+            Advertisement updatedAd = advertisementService.updateAdvertisementById(id, advertisementDTO, files);
+            return ResponseEntity.ok(updatedAd);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @DeleteMapping("/{id}/delete")
+    public ResponseEntity<Advertisement> deleteAdvertisement(@PathVariable("id") Long id) {
+        try {
+            advertisementService.deleteAdvertisementById(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 }
