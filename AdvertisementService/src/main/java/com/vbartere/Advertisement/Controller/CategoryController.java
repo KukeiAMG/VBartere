@@ -3,6 +3,7 @@ package com.vbartere.Advertisement.Controller;
 import com.vbartere.Advertisement.Model.Category;
 import com.vbartere.Advertisement.Model.SubCategory;
 import com.vbartere.Advertisement.Service.CategoryService;
+import com.vbartere.Advertisement.Service.CategorySubCategoryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,9 +14,11 @@ import java.util.List;
 @RequestMapping("/api/category")
 public class CategoryController {
     private final CategoryService categoryService;
+    private final CategorySubCategoryService categorySubCategoryService;
 
-    public CategoryController(CategoryService categoryService) {
+    public CategoryController(CategoryService categoryService, CategorySubCategoryService categorySubCategoryService) {
         this.categoryService = categoryService;
+        this.categorySubCategoryService = categorySubCategoryService;
     }
 
     @GetMapping("/all")
@@ -47,5 +50,16 @@ public class CategoryController {
     public ResponseEntity<SubCategory> deleteCategory(@PathVariable("id") Long id) {
         categoryService.deleteCategoryById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{categoryId}/subcategories/{subCategoryId}")
+    public ResponseEntity<String> addSubCategoryToCategory(@PathVariable("categoryId") Long categoryId,
+                                                           @PathVariable("subCategoryId") Long subCategoryId) {
+        try {
+            categorySubCategoryService.addSubCategoryToCategory(categoryId, subCategoryId);
+            return ResponseEntity.ok("Подкатегория успешно добавлена к категории");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
