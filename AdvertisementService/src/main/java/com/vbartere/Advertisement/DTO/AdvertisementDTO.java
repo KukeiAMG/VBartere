@@ -11,18 +11,33 @@ public class AdvertisementDTO {
     private String title;
     private String description;
     private Long subCategoryId; // Используем ID для связи с SubCategory
-    private List<Long> imageIds; // Используем список ID для связи с Image
-    private Long userId;
+    private Long ownerId;
+    private Long buyersId;
+    private List<Long> imagesId;
     private boolean status;
 
     public AdvertisementDTO() {}
 
-    public AdvertisementDTO(String title, String description, Long subCategoryId, List<Long> imageIds, Long userId, boolean status) {
+    public AdvertisementDTO(String title, String description, Long subCategoryId, Long ownerId, Long buyersId, List<Long> imagesId, boolean status) {
         this.title = title;
         this.description = description;
         this.subCategoryId = subCategoryId;
-        this.imageIds = imageIds;
-        this.userId = userId;
+        this.ownerId = ownerId;
+        this.buyersId = buyersId;
+        this.imagesId = imagesId;
         this.status = status;
+    }
+
+    @Override
+    public String toString() {
+        return "AdvertisementDTO{" +
+                "title='" + title + '\'' +
+                ", description='" + description + '\'' +
+                ", subCategoryId=" + subCategoryId +
+                ", ownerId=" + ownerId +
+                ", buyersId=" + buyersId +
+                ", imagesId=" + imagesId +
+                ", status=" + status +
+                '}';
     }
 }

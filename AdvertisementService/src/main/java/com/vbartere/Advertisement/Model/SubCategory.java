@@ -1,5 +1,7 @@
 package com.vbartere.Advertisement.Model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
@@ -24,9 +26,11 @@ public class SubCategory {
 
     @ManyToOne
     @JoinColumn(name = "category_id")
+    @JsonBackReference
     private Category parentCategory;
 
     @OneToMany(mappedBy = "subcategory", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JsonManagedReference
     private List<Advertisement> advertisementList;
 
     public SubCategory() {}

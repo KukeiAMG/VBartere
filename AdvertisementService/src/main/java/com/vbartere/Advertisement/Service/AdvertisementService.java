@@ -5,34 +5,30 @@ import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Model.Image;
 import com.vbartere.Advertisement.Model.SubCategory;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
-import com.vbartere.Advertisement.Repository.CategoryRepository;
-import com.vbartere.Advertisement.Repository.ImageRepository;
 import com.vbartere.Advertisement.Repository.SubCategoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class AdvertisementService {
     private final AdvertisementRepository advertisementRepository;
-    private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
-    private final ImageRepository imageRepository;
-    private final ImageService imageService;
     // RestTemplate для вызова внешнего микросервиса UserService
     private final RestTemplate restTemplate;
     private final String USER_URL = "http://localhost:8080/user_service/api/";
+    private final ImageService imageService;
 
-    public AdvertisementService(AdvertisementRepository advertisementRepository, CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository, ImageRepository imageRepository, ImageService imageService, RestTemplate restTemplate) {
+    public AdvertisementService(AdvertisementRepository advertisementRepository, SubCategoryRepository subCategoryRepository, RestTemplate restTemplate, ImageService imageService) {
         this.advertisementRepository = advertisementRepository;
-        this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
-        this.imageRepository = imageRepository;
-        this.imageService = imageService;
         this.restTemplate = restTemplate;
+        this.imageService = imageService;
     }
 
     public List<Advertisement> getAllAdvertisements() {
@@ -44,40 +40,65 @@ public class AdvertisementService {
     }
 
     @Transactional
-    public Advertisement createAdvertisement(AdvertisementDTO advertisementDTO) {
-
+    public Advertisement createAdvertisement(AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException {
         SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
                 .orElseThrow(() -> new RuntimeException("Подкатегория не найдена"));
-        System.out.println(subCategory);
 
         Advertisement advertisement = new Advertisement();
         advertisement.setTitle(advertisementDTO.getTitle());
         advertisement.setDescription(advertisementDTO.getDescription());
         advertisement.setSubcategory(subCategory);
-        advertisement.setUserId(advertisementDTO.getUserId());
+        advertisement.setOwnerId(advertisementDTO.getOwnerId());
         advertisement.setStatus(advertisementDTO.isStatus());
 
-        // Добавление изображений к объявлению
-        for (Long imageId : advertisementDTO.getImageIds()) {
-            Image image = imageRepository.findById(imageId)
-                    .orElseThrow(() -> new RuntimeException("Изображение не найдено"));
-            List<Image> imageList = new ArrayList<>();
-            imageList.add(image);
-            advertisement.setImageList(imageList);
+        List<Image> images = new ArrayList<>();
+        for(MultipartFile file : files) {
+            Image image = imageService.createImage(file);
+            image.setAdvertisement(advertisement);
+            images.add(image);
         }
 
-        // Сохранение объявления в базе данных
+        if (!images.isEmpty()) {
+            images.getFirst().setPreviewImage(true);
+            advertisement.setImageList(images);
+        }
+
+        advertisement.setImageList(images);
+
         return advertisementRepository.save(advertisement);
     }
 
     @Transactional
-    public void updateAdvertisementById(Long id, Advertisement advertisement) {
-        Advertisement updatedAdvertisement = getAdvertisementById(id);
-        if (updatedAdvertisement != null) {
-            updatedAdvertisement.setTitle(advertisement.getTitle());
-            updatedAdvertisement.setDescription(advertisement.getDescription());
-            updatedAdvertisement.setSubcategory(advertisement.getSubcategory());
-            updatedAdvertisement.setImageList(advertisement.getImageList());
+    public Advertisement updateAdvertisementById(Long adId, AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException {
+        Advertisement advertisement = advertisementRepository.findById(adId)
+                .orElseThrow(() -> new RuntimeException("Объявление не найдено"));
+
+        SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
+                .orElseThrow(() -> new RuntimeException("Подкатегория не найдена"));
+
+        advertisement.setTitle(advertisementDTO.getTitle());
+        advertisement.setDescription(advertisementDTO.getDescription());
+        advertisement.setSubcategory(subCategory);
+        advertisement.setOwnerId(advertisementDTO.getOwnerId());
+        advertisement.setStatus(advertisementDTO.isStatus());
+
+        List<Image> images = new ArrayList<>();
+        for (MultipartFile file : files) {
+            Image image = imageService.createImage(file);
+            image.setAdvertisement(advertisement);
+            images.add(image);
         }
+
+        if (!images.isEmpty()) {
+            images.getFirst().setPreviewImage(true);
+            advertisement.setImageList(images);
+        }
+
+        return advertisementRepository.save(advertisement);
+    }
+
+    @Transactional
+    public void deleteAdvertisementById(Long id) {
+        advertisementRepository.deleteById(id);
     }
 }

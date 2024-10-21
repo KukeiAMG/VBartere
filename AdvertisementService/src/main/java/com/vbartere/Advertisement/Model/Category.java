@@ -1,5 +1,6 @@
 package com.vbartere.Advertisement.Model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
@@ -23,6 +24,7 @@ public class Category {
     private String name;
 
     @OneToMany(mappedBy = "parentCategory", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JsonManagedReference
     private List<SubCategory> subCategoryList;
 
     public Category() {}
@@ -32,12 +34,12 @@ public class Category {
         this.subCategoryList = subCategoryList;
     }
 
-//    @Override
-//    public String toString() {
-//        return "Category{" +
-//                "id=" + id +
-//                ", name='" + name + '\'' +
-//                ", subCategoryList=" + subCategoryList +
-//                '}';
-//    }
+    @Override
+    public String toString() {
+        return "Category{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", subCategoryList=" + subCategoryList +
+                '}';
+    }
 }

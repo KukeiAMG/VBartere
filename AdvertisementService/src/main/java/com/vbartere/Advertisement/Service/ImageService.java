@@ -1,34 +1,58 @@
 package com.vbartere.Advertisement.Service;
 
-import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Model.Image;
-import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Repository.ImageRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class ImageService {
     private final ImageRepository imageRepository;
-    private final AdvertisementRepository advertisementRepository;
 
-    public ImageService(ImageRepository imageRepository, AdvertisementRepository advertisementRepository) {
+    public ImageService(ImageRepository imageRepository) {
         this.imageRepository = imageRepository;
-        this.advertisementRepository = advertisementRepository;
+    }
+
+    private Image toImageEntity(MultipartFile file) throws IOException {
+        Image image = new Image();
+        image.setName(file.getName());
+        image.setOriginalFileName(file.getOriginalFilename());
+        image.setContentType(file.getContentType());
+        image.setSize(file.getSize());
+        image.setBytes(file.getBytes());
+        return image;
+    }
+
+    public Image getImageById(Long id) {
+        return imageRepository.findById(id).orElseThrow(
+                () -> new RuntimeException("Изображение не найдено"));
     }
 
     @Transactional
-    public Image createImage(String url, Long advertisementId) {
-        // Проверка существования объявления
-        Advertisement advertisement = advertisementRepository.findById(advertisementId)
-                .orElseThrow(() -> new RuntimeException("Объявление не найдено"));
+    public Image createImage(MultipartFile file) throws IOException {
+        Image image = toImageEntity(file);
+        imageRepository.save(image);
+        return image;
+    }
 
-        // Создание нового объекта Image
-        Image image = new Image();
-        image.setUrl(url);
-        image.setAdvertisement(advertisement);
+    @Transactional
+    public List<Image> createImages(List<MultipartFile> file) throws IOException {
+        List<Image> images = new ArrayList<>();
+        for(MultipartFile file1 : file) {
+            Image image = toImageEntity(file1);
+            images.add(image);
+            imageRepository.save(image);
+        }
+        return images;
+    }
 
-        // Сохранение изображения в базе данных
-        return imageRepository.save(image);
+    @Transactional
+    public void deleteImageById(Long id) {
+        imageRepository.deleteById(id);
     }
 }
