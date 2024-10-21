@@ -11,7 +11,9 @@ import com.vbartere.Advertisement.Repository.SubCategoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,17 +23,25 @@ public class AdvertisementService {
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
     private final ImageRepository imageRepository;
-    private final ImageService imageService;
     // RestTemplate для вызова внешнего микросервиса UserService
     private final RestTemplate restTemplate;
     private final String USER_URL = "http://localhost:8080/user_service/api/";
 
-    public AdvertisementService(AdvertisementRepository advertisementRepository, CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository, ImageRepository imageRepository, ImageService imageService, RestTemplate restTemplate) {
+    private Image toImageEntity(MultipartFile file) throws IOException {
+        Image image = new Image();
+        image.setName(file.getName());
+        image.setOriginalFileName(file.getOriginalFilename());
+        image.setContentType(file.getContentType());
+        image.setSize(file.getSize());
+        image.setBytes(file.getBytes());
+        return image;
+    }
+
+    public AdvertisementService(AdvertisementRepository advertisementRepository, CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository, ImageRepository imageRepository, RestTemplate restTemplate) {
         this.advertisementRepository = advertisementRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
         this.imageRepository = imageRepository;
-        this.imageService = imageService;
         this.restTemplate = restTemplate;
     }
 
@@ -57,7 +67,6 @@ public class AdvertisementService {
         advertisement.setUserId(advertisementDTO.getUserId());
         advertisement.setStatus(advertisementDTO.isStatus());
 
-        // Добавление изображений к объявлению
         for (Long imageId : advertisementDTO.getImageIds()) {
             Image image = imageRepository.findById(imageId)
                     .orElseThrow(() -> new RuntimeException("Изображение не найдено"));
@@ -65,8 +74,6 @@ public class AdvertisementService {
             imageList.add(image);
             advertisement.setImageList(imageList);
         }
-
-        // Сохранение объявления в базе данных
         return advertisementRepository.save(advertisement);
     }
 
