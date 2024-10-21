@@ -1,5 +1,7 @@
 package com.vbartere.Advertisement.Model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
@@ -30,23 +32,28 @@ public class Advertisement {
 
     @ManyToOne
     @JoinColumn(name = "subcategory_id")
+    @JsonBackReference
     private SubCategory subcategory;
 
     @OneToMany(mappedBy = "advertisement", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JsonManagedReference
     private List<Image> imageList;
 
-    private Long userId; // id пользователя из UserService
+    private Long ownerId; // id пользователя из UserService (owner)
+
+    private Long buyersId;
 
     private boolean status;
 
     public Advertisement() {}
 
-    public Advertisement(String title, String description, SubCategory subcategory, List<Image> imageList, Long userId, boolean status) {
+    public Advertisement(String title, String description, SubCategory subcategory, List<Image> imageList, Long ownerId, Long buyersId, boolean status) {
         this.title = title;
         this.description = description;
         this.subcategory = subcategory;
         this.imageList = imageList;
-        this.userId = userId;
+        this.ownerId = ownerId;
+        this.buyersId = buyersId;
         this.status = status;
     }
 
@@ -58,7 +65,8 @@ public class Advertisement {
                 ", description='" + description + '\'' +
                 ", subcategory=" + subcategory +
                 ", imageList=" + imageList +
-                ", UserId=" + userId +
+                ", ownerId=" + ownerId +
+                ", buyersId=" + buyersId +
                 ", status=" + status +
                 '}';
     }

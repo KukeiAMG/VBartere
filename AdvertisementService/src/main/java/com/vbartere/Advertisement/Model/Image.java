@@ -1,5 +1,6 @@
 package com.vbartere.Advertisement.Model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,6 +36,7 @@ public class Image {
 
     @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
     @JoinColumn(name = "advertisement_id")
+    @JsonBackReference
     private Advertisement advertisement;
 
     public Image() {}
