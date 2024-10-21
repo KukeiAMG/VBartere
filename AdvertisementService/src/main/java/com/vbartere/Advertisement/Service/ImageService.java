@@ -30,8 +30,7 @@ public class ImageService {
 
     public Image getImageById(Long id) {
         return imageRepository.findById(id).orElseThrow(
-                () -> new RuntimeException("Изображение не найдено")
-        );
+                () -> new RuntimeException("Изображение не найдено"));
     }
 
     @Transactional

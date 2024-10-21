@@ -1,6 +1,5 @@
 package com.vbartere.Advertisement.Controller;
 
-import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Model.Image;
 import com.vbartere.Advertisement.Repository.ImageRepository;
 import com.vbartere.Advertisement.Service.ImageService;

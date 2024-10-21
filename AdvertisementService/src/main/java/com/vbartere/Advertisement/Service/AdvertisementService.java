@@ -5,8 +5,6 @@ import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Model.Image;
 import com.vbartere.Advertisement.Model.SubCategory;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
-import com.vbartere.Advertisement.Repository.CategoryRepository;
-import com.vbartere.Advertisement.Repository.ImageRepository;
 import com.vbartere.Advertisement.Repository.SubCategoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

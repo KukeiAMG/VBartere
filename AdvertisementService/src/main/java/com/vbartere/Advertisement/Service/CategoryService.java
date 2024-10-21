@@ -21,8 +21,7 @@ public class CategoryService {
 
     public Category getCategoryById(Long id) {
         return categoryRepository.findById(id).orElseThrow(
-                () -> new RuntimeException("Категория не найдена")
-        );
+                () -> new RuntimeException("Категория не найдена"));
     }
 
     @Transactional
