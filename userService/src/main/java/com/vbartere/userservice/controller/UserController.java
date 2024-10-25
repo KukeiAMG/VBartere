@@ -81,6 +81,18 @@ public class UserController {
             return ResponseEntity.ok(false); // Если токен не валиден
         }
     }
+
+    @GetMapping("/getId")
+    public ResponseEntity<Long> getUserId(@RequestParam(value = "token") String token) {
+        try {
+            Long userId = jwtService.extractUserId(token);
+            System.out.println(userId);
+            return ResponseEntity.ok(userId); // Если токен валиден
+        } catch (Exception e) {
+            System.out.println("Token validation error: " + e.getMessage());
+            return ResponseEntity.ok(null); // Если токен не валиден
+        }
+    }
 }
 
 
