@@ -1,5 +1,7 @@
 package com.vbartere.Gateway.Config;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +22,7 @@ public class GatewayConfig {
     @Bean
     public RouteLocator CustomRoute (RouteLocatorBuilder builder) {
         return builder.routes()
-                .route("AdvertisementService", r -> r.path("/api/advertisements/**")
+                .route("AdvertisementService", r -> r.path("/api/advertisements/create")
                         .filters(f -> f.filter((exchange, chain) -> {
                             // Проверка JWT и phoneNumber
                             // В Headers добавляем ключи Authorization и phoneNumber, а значения - токен и телефон юзера
@@ -31,9 +33,7 @@ public class GatewayConfig {
 
                             if (authHeader != null && authHeader.startsWith("Bearer")) {
                                 String jwtToken = authHeader.substring(7);
-                                String phoneNumber = phoneHeader.substring(7);
-
-                                if (validateJwt(jwtToken, phoneNumber)) {
+                                if (validateJwt(jwtToken, phoneHeader)) {
                                     return chain.filter(exchange);
                                 }
                             }
@@ -46,7 +46,7 @@ public class GatewayConfig {
 
     private boolean validateJwt(String jwtToken, String phoneNumber) {
         try {
-            // Создание URL с параметрами запроса для валидации
+            // Создание URL с параметрами запроса для валидации3
             String url = UriComponentsBuilder.fromHttpUrl("http://localhost:8081/api/users/validate")
                     .queryParam("token", jwtToken)
                     .queryParam("phoneNumber", phoneNumber)
@@ -68,6 +68,21 @@ public class GatewayConfig {
         } catch (Exception e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    private static final String SECRET_KEY = "5FZsRG9Q2f9UvdxeUR4iU5FV9nFg1Hn9zPb49M8uV7o=";
+    private Long extractUserId(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(SECRET_KEY.getBytes())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return Long.parseLong(claims.getSubject()); // Предполагается, что ID пользователя хранится в subject
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }
