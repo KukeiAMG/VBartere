@@ -44,11 +44,6 @@ public class JwtService {
                 .getBody();
     }
 
-    public Long extractUserId(String token) {
-        Claims claims = extractAllClaims(token);
-        return Long.parseLong(claims.getSubject());
-    }
-
     // Проверка токена на соответствие пользователю и проверка срока действия
     public Boolean validateToken(String token, String phoneNumber) {
         final String extractedPhoneNumber = extractPhoneNumber(token);
