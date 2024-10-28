@@ -3,16 +3,10 @@ package com.vbartere.userservice.controller;
 import com.vbartere.userservice.model.User;
 import com.vbartere.userservice.service.JwtService;
 import com.vbartere.userservice.service.UserService;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.crypto.SecretKey;
-import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -82,15 +76,14 @@ public class UserController {
         }
     }
 
-    @GetMapping("/getId")
+    @GetMapping("/getCurrentUserId")
     public ResponseEntity<Long> getUserId(@RequestParam(value = "token") String token) {
         try {
-            Long userId = jwtService.extractUserId(token);
-            System.out.println(userId);
+            Long userId = userService.getUserIdByPhoneNumber(token);
             return ResponseEntity.ok(userId); // Если токен валиден
         } catch (Exception e) {
             System.out.println("Token validation error: " + e.getMessage());
-            return ResponseEntity.ok(null); // Если токен не валиден
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // Если токен не валиден
         }
     }
 }
