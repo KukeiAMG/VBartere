@@ -70,6 +70,11 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public Long getUserIdByPhoneNumber(String token) {
+        User user = userRepository.findByPhoneNumber(jwtService.extractPhoneNumber(token))
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        return user.getId();
+    }
 
     public boolean isPhoneNumberRegistered(String phoneNumber) {
         return userRepository.findByPhoneNumber(phoneNumber).isPresent();
