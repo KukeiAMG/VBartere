@@ -40,7 +40,7 @@ public class AdvertisementService {
     }
 
     @Transactional
-    public Advertisement createAdvertisement(AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException {
+    public Advertisement createAdvertisement(AdvertisementDTO advertisementDTO, List<MultipartFile> files, Long userId) throws IOException {
         SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
                 .orElseThrow(() -> new RuntimeException("Подкатегория не найдена"));
 
@@ -48,8 +48,8 @@ public class AdvertisementService {
         advertisement.setTitle(advertisementDTO.getTitle());
         advertisement.setDescription(advertisementDTO.getDescription());
         advertisement.setSubcategory(subCategory);
-        advertisement.setOwnerId(advertisementDTO.getOwnerId());
         advertisement.setStatus(advertisementDTO.isStatus());
+        advertisement.setOwnerId(userId);
 
         List<Image> images = new ArrayList<>();
         for(MultipartFile file : files) {
