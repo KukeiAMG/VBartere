@@ -32,9 +32,10 @@ public class AdvertisementController {
 
     @PostMapping(value = "/create", consumes = {"multipart/form-data"})
     public ResponseEntity<Advertisement> createAdvertisement(@RequestPart("advertisement") AdvertisementDTO advertisementDTO,
-                                                             @RequestPart("files") List<MultipartFile> files) {
+                                                             @RequestPart("files") List<MultipartFile> files,
+                                                             @RequestHeader("user-ID") Long userId) {
         try {
-            Advertisement createdAd = advertisementService.createAdvertisement(advertisementDTO, files);
+            Advertisement createdAd = advertisementService.createAdvertisement(advertisementDTO, files, userId);
             return new ResponseEntity<>(createdAd, HttpStatus.CREATED);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);
