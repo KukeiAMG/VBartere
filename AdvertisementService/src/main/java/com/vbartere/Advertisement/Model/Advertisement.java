@@ -12,13 +12,75 @@ import java.util.List;
 
 @Entity
 @Table(name = "advertisement")
-@Getter
-@Setter
 public class Advertisement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public @NotEmpty(message = "Title can not be empty") @Size(min = 2, max = 50, message = "The minimum allowed number of characters is 2, the maximum is 50") String getTitle() {
+        return title;
+    }
+
+    public void setTitle(@NotEmpty(message = "Title can not be empty") @Size(min = 2, max = 50, message = "The minimum allowed number of characters is 2, the maximum is 50") String title) {
+        this.title = title;
+    }
+
+    public @NotEmpty(message = "Description can not be empty") @Size(min = 2, max = 500, message = "The minimum allowed number of characters is 2, the maximum is 500") String getDescription() {
+        return description;
+    }
+
+    public void setDescription(@NotEmpty(message = "Description can not be empty") @Size(min = 2, max = 500, message = "The minimum allowed number of characters is 2, the maximum is 500") String description) {
+        this.description = description;
+    }
+
+    public SubCategory getSubcategory() {
+        return subcategory;
+    }
+
+    public void setSubcategory(SubCategory subcategory) {
+        this.subcategory = subcategory;
+    }
+
+    public List<Image> getImageList() {
+        return imageList;
+    }
+
+    public void setImageList(List<Image> imageList) {
+        this.imageList = imageList;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Long ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public Long getBuyersId() {
+        return buyersId;
+    }
+
+    public void setBuyersId(Long buyersId) {
+        this.buyersId = buyersId;
+    }
+
+    public boolean isStatus() {
+        return status;
+    }
+
+    public void setStatus(boolean status) {
+        this.status = status;
+    }
 
     @Column(name = "title")
     @NotEmpty(message = "Title can not be empty")

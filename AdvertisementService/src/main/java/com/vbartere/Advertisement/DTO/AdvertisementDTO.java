@@ -5,8 +5,6 @@ import lombok.Setter;
 
 import java.util.List;
 
-@Getter
-@Setter
 public class AdvertisementDTO {
     private String title;
     private String description;
@@ -17,6 +15,62 @@ public class AdvertisementDTO {
     private boolean status;
 
     public AdvertisementDTO() {}
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Long getSubCategoryId() {
+        return subCategoryId;
+    }
+
+    public void setSubCategoryId(Long subCategoryId) {
+        this.subCategoryId = subCategoryId;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Long ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public Long getBuyersId() {
+        return buyersId;
+    }
+
+    public void setBuyersId(Long buyersId) {
+        this.buyersId = buyersId;
+    }
+
+    public List<Long> getImagesId() {
+        return imagesId;
+    }
+
+    public void setImagesId(List<Long> imagesId) {
+        this.imagesId = imagesId;
+    }
+
+    public boolean isStatus() {
+        return status;
+    }
+
+    public void setStatus(boolean status) {
+        this.status = status;
+    }
 
     public AdvertisementDTO(String title, String description, Long subCategoryId, Long ownerId, Long buyersId, List<Long> imagesId, boolean status) {
         this.title = title;

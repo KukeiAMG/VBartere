@@ -11,12 +11,35 @@ import java.util.List;
 
 @Entity
 @Table(name = "category")
-@Getter
-@Setter
+
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public @NotEmpty(message = "Category name can not be empty") @Size(min = 2, max = 20, message = "The minimum allowed number of characters is 2, the maximum is 20") String getName() {
+        return name;
+    }
+
+    public void setName(@NotEmpty(message = "Category name can not be empty") @Size(min = 2, max = 20, message = "The minimum allowed number of characters is 2, the maximum is 20") String name) {
+        this.name = name;
+    }
+
+    public List<SubCategory> getSubCategoryList() {
+        return subCategoryList;
+    }
+
+    public void setSubCategoryList(List<SubCategory> subCategoryList) {
+        this.subCategoryList = subCategoryList;
+    }
 
     @Column(name = "name")
     @NotEmpty(message = "Category name can not be empty")
