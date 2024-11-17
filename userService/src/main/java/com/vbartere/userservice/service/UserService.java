@@ -1,12 +1,16 @@
 package com.vbartere.userservice.service;
 
+import com.vbartere.userservice.model.Cart;
 import com.vbartere.userservice.model.Role;
 import com.vbartere.userservice.model.User;
+import com.vbartere.userservice.repository.CartRepository;
 import com.vbartere.userservice.repository.RoleRepository;
 import com.vbartere.userservice.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
@@ -15,15 +19,17 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
+    private final CartRepository cartRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository) {
+    public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository, CartRepository cartRepository) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.roleRepository = roleRepository;
+        this.cartRepository = cartRepository;
     }
 
     public String loginUser(String phoneNumber, String password) {
@@ -42,7 +48,15 @@ public class UserService {
         User user = new User();
         user.setPhoneNumber(phoneNumber);
         user.setPassword(passwordEncoder.encode(password));
-        return userRepository.save(user);
+
+        user = userRepository.save(user);
+
+        Cart cart = new Cart();
+        cart.setUserId(user.getId());
+        cart.setAdvertisementList(new ArrayList<>());
+        cartRepository.save(cart);
+
+        return user;
     }
 
     public User assignRoleToUser(Long userId, String roleName) {
