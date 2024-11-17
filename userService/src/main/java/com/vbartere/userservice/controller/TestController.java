@@ -10,7 +10,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-public class UserAdvertisementController {
+public class TestController {
 
     private final CartService cartService;
     private final UserService userService;
@@ -19,7 +19,7 @@ public class UserAdvertisementController {
     private KafkaTemplate<String, CartEvent> kafkaTemplate;
     private static final String TOPIC = "cart-events";
 
-    public UserAdvertisementController(CartService cartService, UserService userService) {
+    public TestController(CartService cartService, UserService userService) {
         this.cartService = cartService;
         this.userService = userService;
     }
