@@ -20,6 +20,7 @@
         <module>userService</module>
         <module>GatewayService</module>
         <module>shared-kafka</module>
+        <module>AdminService</module>
     </modules>
     <licenses>
         <license/>
