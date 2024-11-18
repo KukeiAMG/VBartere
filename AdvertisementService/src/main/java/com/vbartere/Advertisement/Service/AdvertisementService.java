@@ -6,6 +6,7 @@ import com.vbartere.Advertisement.Model.Image;
 import com.vbartere.Advertisement.Model.SubCategory;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Repository.SubCategoryRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -14,20 +15,17 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AdvertisementService {
     private final AdvertisementRepository advertisementRepository;
     private final SubCategoryRepository subCategoryRepository;
-    // RestTemplate для вызова внешнего микросервиса UserService
-    private final RestTemplate restTemplate;
-    private final String USER_URL = "http://localhost:8080/user_service/api/";
     private final ImageService imageService;
 
-    public AdvertisementService(AdvertisementRepository advertisementRepository, SubCategoryRepository subCategoryRepository, RestTemplate restTemplate, ImageService imageService) {
+    public AdvertisementService(AdvertisementRepository advertisementRepository, SubCategoryRepository subCategoryRepository, ImageService imageService) {
         this.advertisementRepository = advertisementRepository;
         this.subCategoryRepository = subCategoryRepository;
-        this.restTemplate = restTemplate;
         this.imageService = imageService;
     }
 
@@ -35,8 +33,22 @@ public class AdvertisementService {
         return advertisementRepository.findAll();
     }
 
-    public Advertisement getAdvertisementById(Long id) {
+    public Advertisement findById(Long id) {
         return advertisementRepository.findById(id).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public AdvertisementDTO getAdvertisementById(Long id) {
+        Advertisement advertisement = advertisementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Advertisement not found"));
+
+        // Преобразуем сущность в DTO с использованием идентификаторов изображений
+        List<Long> imageIds = advertisement.getImageList().stream()
+                .map(Image::getId)
+                .collect(Collectors.toList());
+
+        return new AdvertisementDTO(advertisement.getTitle(), advertisement.getDescription(), advertisement.getSubcategory().getId(), advertisement.getOwnerId(),
+                advertisement.getBuyersId(), imageIds, advertisement.getStatus());
     }
 
     @Transactional

@@ -26,7 +26,7 @@ public class AdvertisementController {
     }
 
     @GetMapping("/{id}")
-    public Advertisement getAdvertisement(@PathVariable Long id) {
+    public AdvertisementDTO getAdvertisement(@PathVariable Long id) {
         return advertisementService.getAdvertisementById(id);
     }
 

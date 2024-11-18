@@ -18,6 +18,46 @@ public class Advertisement {
     @Column(name = "id")
     private Long id;
 
+    @Column(name = "title")
+    @NotEmpty(message = "Title can not be empty")
+    @Size(min = 2, max = 50, message = "The minimum allowed number of characters is 2, the maximum is 50")
+    private String title;
+
+    @Column(name = "description")
+    @NotEmpty(message = "Description can not be empty")
+    @Size(min = 2, max = 500, message = "The minimum allowed number of characters is 2, the maximum is 500")
+    private String description;
+
+    @ManyToOne
+    @JoinColumn(name = "subcategory_id")
+    @JsonBackReference
+    private SubCategory subcategory;
+
+    @OneToMany(mappedBy = "advertisement", cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE })
+    @JsonManagedReference
+    private List<Image> imageList;
+
+    @Column(name = "ownerId")
+    private Long ownerId; // id пользователя из UserService (owner)
+
+    @Column(name = "buyersId")
+    private Long buyersId;
+
+    @Column(name = "status")
+    private Boolean status;
+
+    public Advertisement() {}
+
+    public Advertisement(String title, String description, SubCategory subcategory, List<Image> imageList, Long ownerId, Long buyersId, boolean status) {
+        this.title = title;
+        this.description = description;
+        this.subcategory = subcategory;
+        this.imageList = imageList;
+        this.ownerId = ownerId;
+        this.buyersId = buyersId;
+        this.status = status;
+    }
+
     public Long getId() {
         return id;
     }
@@ -74,48 +114,11 @@ public class Advertisement {
         this.buyersId = buyersId;
     }
 
-    public boolean isStatus() {
+    public Boolean getStatus() {
         return status;
     }
 
-    public void setStatus(boolean status) {
-        this.status = status;
-    }
-
-    @Column(name = "title")
-    @NotEmpty(message = "Title can not be empty")
-    @Size(min = 2, max = 50, message = "The minimum allowed number of characters is 2, the maximum is 50")
-    private String title;
-
-    @Column(name = "description")
-    @NotEmpty(message = "Description can not be empty")
-    @Size(min = 2, max = 500, message = "The minimum allowed number of characters is 2, the maximum is 500")
-    private String description;
-
-    @ManyToOne
-    @JoinColumn(name = "subcategory_id")
-    @JsonBackReference
-    private SubCategory subcategory;
-
-    @OneToMany(mappedBy = "advertisement", cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE })
-    @JsonManagedReference
-    private List<Image> imageList;
-
-    private Long ownerId; // id пользователя из UserService (owner)
-
-    private Long buyersId;
-
-    private boolean status;
-
-    public Advertisement() {}
-
-    public Advertisement(String title, String description, SubCategory subcategory, List<Image> imageList, Long ownerId, Long buyersId, boolean status) {
-        this.title = title;
-        this.description = description;
-        this.subcategory = subcategory;
-        this.imageList = imageList;
-        this.ownerId = ownerId;
-        this.buyersId = buyersId;
+    public void setStatus(Boolean status) {
         this.status = status;
     }
 
