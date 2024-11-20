@@ -3,17 +3,18 @@ package com.vbartere.Shared.Kafka;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class CartEvent {
+public class CartResult {
     private Long userId;
     private Long advertisementId;
+    private boolean successful;
 
     @JsonCreator
-    public CartEvent(@JsonProperty("userId") Long userId, @JsonProperty("advertisementId") Long advertisementId) {
+    public CartResult(@JsonProperty("userId") Long userId, @JsonProperty("advertisementId") Long advertisementId, @JsonProperty("successful") boolean successful) {
         this.userId = userId;
         this.advertisementId = advertisementId;
+        this.successful = successful;
     }
 
-    // Геттеры и сеттеры
     public Long getUserId() {
         return userId;
     }
@@ -30,11 +31,20 @@ public class CartEvent {
         this.advertisementId = advertisementId;
     }
 
+    public boolean isSuccessful() {
+        return successful;
+    }
+
+    public void setSuccessful(boolean successful) {
+        this.successful = successful;
+    }
+
     @Override
     public String toString() {
-        return "CartEvent{" +
+        return "CartResult{" +
                 "userId=" + userId +
                 ", advertisementId=" + advertisementId +
+                ", successful=" + successful +
                 '}';
     }
 }
