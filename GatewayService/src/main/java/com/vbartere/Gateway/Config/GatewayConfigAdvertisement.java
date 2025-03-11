@@ -5,15 +5,19 @@ import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.*;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.Objects;
+
 @Configuration
-public class GatewayConfig {
+public class GatewayConfigAdvertisement {
 
     private final RestTemplate restTemplate;
+    private final String URI = "http://localhost:8080";
 
-    public GatewayConfig(RestTemplate restTemplate) {
+    public GatewayConfigAdvertisement(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
@@ -39,7 +43,7 @@ public class GatewayConfig {
                             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                             return exchange.getResponse().setComplete();
                         }))
-                        .uri("http://localhost:8080")) // URL AdvertisementService
+                        .uri(URI)) // URL AdvertisementService
 
                 .route("AdvertisementService", r -> r.path("/api/advertisements/create")
                         .filters(f -> f.filter((exchange, chain) -> {
@@ -63,7 +67,32 @@ public class GatewayConfig {
                             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                             return exchange.getResponse().setComplete();
                         }))
-                        .uri("http://localhost:8080"))
+                        .uri(URI))
+
+                .route("AdminService", r -> r.path("/api/admin/")
+                        .filters(f -> f.filter((exchange, chain) -> {
+                            String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+                            String phoneHeader = exchange.getRequest().getHeaders().getFirst("phoneNumber");
+                            String roleHeader = exchange.getRequest().getHeaders().getFirst("ROLE_ADMIN");
+
+                            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                                String jwtToken = authHeader.substring(7);
+                                Long userId = getUserIdFromUserService(jwtToken);
+                                System.out.println(jwtToken);
+                                if (validateJwt(jwtToken, phoneHeader) && Objects.equals(roleHeader, "ROLE_ADMIN")) {
+
+                                    assert userId != null;
+                                    exchange.getRequest().mutate()
+                                            .header("user-ID", userId.toString())
+                                            .build();
+                                    return chain.filter(exchange);
+                                }
+                            }
+                            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                            return exchange.getResponse().setComplete();
+
+                        }))
+                        .uri(URI))
 
                 .build();
     }
