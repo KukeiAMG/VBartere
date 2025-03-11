@@ -31,7 +31,21 @@ public class User {
     )
     private Set<Role> roles;
 
+    private boolean isBanned;
+
     // Getters and Setters
+
+    public User() {}
+
+    public User(String phoneNumber, String password, String name, String surname, Set<Role> roles, boolean isBanned) {
+        this.phoneNumber = phoneNumber;
+        this.password = password;
+        this.name = name;
+        this.surname = surname;
+        this.roles = roles;
+        this.isBanned = isBanned;
+    }
+
     public Long getId() {
         return id;
     }
@@ -78,6 +92,14 @@ public class User {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public boolean isBanned() {
+        return isBanned;
+    }
+
+    public void setBanned(boolean banned) {
+        isBanned = banned;
     }
 }
 

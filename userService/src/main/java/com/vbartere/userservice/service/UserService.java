@@ -6,11 +6,14 @@ import com.vbartere.userservice.model.User;
 import com.vbartere.userservice.repository.CartRepository;
 import com.vbartere.userservice.repository.RoleRepository;
 import com.vbartere.userservice.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -48,6 +51,8 @@ public class UserService {
         User user = new User();
         user.setPhoneNumber(phoneNumber);
         user.setPassword(passwordEncoder.encode(password));
+        user.setRoles(Collections.singleton(roleRepository.findByName("ROLE_USER")));
+        user.setBanned(false);
 
         user = userRepository.save(user);
 
@@ -92,6 +97,20 @@ public class UserService {
 
     public boolean isPhoneNumberRegistered(String phoneNumber) {
         return userRepository.findByPhoneNumber(phoneNumber).isPresent();
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Пользователь с id " + id + " не был найден"));
+    }
+
+    public void updateBanStatus(Long userId, boolean isBanned) {
+        User user = getUserById(userId);
+        user.setBanned(isBanned);
+        userRepository.save(user);
     }
 }
 
