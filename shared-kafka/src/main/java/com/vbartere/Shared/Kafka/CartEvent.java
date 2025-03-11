@@ -1,4 +1,4 @@
-package com.vbartere.Shared.Kafka;
+package com.vbartere.shared.kafka;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
