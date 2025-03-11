@@ -5,7 +5,7 @@ import com.vbartere.Advertisement.DTO.AdvertisementMapper;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Service.AdvertisementService;
-import com.vbartere.Shared.Kafka.CartEvent;
+import com.vbartere.shared.kafka.CartEvent;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 

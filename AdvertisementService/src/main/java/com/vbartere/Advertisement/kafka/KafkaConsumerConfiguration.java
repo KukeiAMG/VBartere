@@ -1,5 +1,5 @@
 package com.vbartere.Advertisement.kafka;
-import com.vbartere.Shared.Kafka.CartEvent;
+import com.vbartere.shared.kafka.CartEvent;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
