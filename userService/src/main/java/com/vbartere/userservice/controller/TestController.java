@@ -1,5 +1,5 @@
 package com.vbartere.userservice.controller;
-import com.vbartere.Shared.Kafka.CartEvent;
+import com.vbartere.Shared.kafka.CartEvent;
 
 
 import com.vbartere.userservice.service.CartService;

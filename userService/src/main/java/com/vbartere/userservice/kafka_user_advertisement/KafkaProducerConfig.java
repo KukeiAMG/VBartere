@@ -1,5 +1,5 @@
 package com.vbartere.userservice.kafka_user_advertisement;
-import com.vbartere.Shared.Kafka.CartEvent;
+import com.vbartere.Shared.kafka.CartEvent;
 
 
 import org.springframework.context.annotation.Bean;

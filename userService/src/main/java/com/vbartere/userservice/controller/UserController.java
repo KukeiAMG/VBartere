@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -85,6 +86,20 @@ public class UserController {
             System.out.println("Token validation error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // Если токен не валиден
         }
+    }
+
+    @GetMapping("/getAll")
+    public ResponseEntity<List<User>> getAll() {
+        try {
+            return ResponseEntity.ok(userService.getAllUsers());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // Если токен не валиден
+        }
+    }
+
+    @PutMapping("/{userId}/ban")
+    public ResponseEntity<String> updateBanStatus(@PathVariable("userId") Long userId, @RequestParam("isBanned") boolean isBanned) {
+
     }
 }
 
