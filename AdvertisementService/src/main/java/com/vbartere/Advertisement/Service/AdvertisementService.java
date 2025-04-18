@@ -116,7 +116,7 @@ public class AdvertisementService {
     }
 
     @Transactional
-    public Advertisement updateAdvertisementById(Long advertisementID, AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException {
+    public Advertisement updateAdvertisementById(Long advertisementID, AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException, ExecutionException, InterruptedException {
 
         Advertisement advertisement = advertisementRepository.findById(advertisementID)
                 .orElseThrow(() -> new RuntimeException("Объявление не найдено"));
@@ -154,7 +154,13 @@ public class AdvertisementService {
 
         sendCacheService.sendCacheRequest(objectMapper.writeValueAsString(savedAdvertisement));
 
-        return savedAdvertisement;
+        // Ожидаем появления кэша красиво
+        return cacheAwaiterService.awaitCache(advertisement.getId())
+                .orTimeout(10, TimeUnit.SECONDS)
+                .exceptionally(throwable -> {
+                    throw new RuntimeException("Кэш ещё не готов. Попробуйте позже.");
+                })
+                .get(); // блокируем поток до получения результата
     }
 
     @Transactional
