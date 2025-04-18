@@ -1,5 +1,6 @@
 package com.vbartere.Advertisement.Controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.vbartere.Shared.Kafka.DTO.AdvertisementDTO;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Service.AdvertisementService;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api/advertisements")
@@ -26,7 +28,7 @@ public class AdvertisementController {
     }
 
     @GetMapping("/{id}")
-    public AdvertisementDTO getAdvertisement(@PathVariable Long id) {
+    public Advertisement getAdvertisement(@PathVariable Long id) throws ExecutionException, JsonProcessingException, InterruptedException {
         return advertisementService.getAdvertisementById(id);
     }
 

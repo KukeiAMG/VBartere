@@ -1,11 +1,16 @@
 package com.vbartere.Advertisement.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vbartere.Advertisement.kafka.Service.CacheAwaiterService;
+import com.vbartere.Advertisement.kafka.Service.SendCacheService;
 import com.vbartere.Shared.Kafka.DTO.AdvertisementDTO;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Model.Image;
 import com.vbartere.Advertisement.Model.SubCategory;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Repository.SubCategoryRepository;
+import io.lettuce.core.api.sync.RedisCommands;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,40 +19,70 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class AdvertisementService {
+
     private final AdvertisementRepository advertisementRepository;
     private final SubCategoryRepository subCategoryRepository;
     private final ImageService imageService;
+    private final ObjectMapper objectMapper;
+    private final RedisCommands<String, String> redisCommands;
+    private final CacheAwaiterService cacheAwaiterService;
+    private final SendCacheService sendCacheService;
 
-    public AdvertisementService(AdvertisementRepository advertisementRepository, SubCategoryRepository subCategoryRepository, ImageService imageService) {
+    public AdvertisementService(AdvertisementRepository advertisementRepository, SubCategoryRepository subCategoryRepository, ImageService imageService, ObjectMapper objectMapper, RedisCommands<String, String> redisCommands, CacheAwaiterService cacheAwaiterService, SendCacheService sendCacheService) {
         this.advertisementRepository = advertisementRepository;
         this.subCategoryRepository = subCategoryRepository;
         this.imageService = imageService;
+        this.objectMapper = objectMapper;
+        this.redisCommands = redisCommands;
+        this.cacheAwaiterService = cacheAwaiterService;
+        this.sendCacheService = sendCacheService;
     }
 
     public List<Advertisement> getAllAdvertisements() {
         return advertisementRepository.findAll();
     }
 
-    public Advertisement findById(Long id) {
-        return advertisementRepository.findById(id).orElse(null);
-    }
+    public Advertisement getAdvertisementById(Long id) throws JsonProcessingException, ExecutionException, InterruptedException {
 
-    @Transactional(readOnly = true)
-    public AdvertisementDTO getAdvertisementById(Long id) {
-        Advertisement advertisement = advertisementRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Advertisement not found"));
+        String cacheKey = "advertisement:" + id;
+        String cacheData = redisCommands.get(cacheKey);
 
-        // Преобразуем сущность в DTO с использованием идентификаторов изображений
-        List<Long> imageIds = advertisement.getImageList().stream()
-                .map(Image::getId)
-                .collect(Collectors.toList());
+        if (cacheData != null) {
+            System.out.println("Объявление " + cacheData + " взято из кэша");
+            return objectMapper.readValue(cacheData, Advertisement.class);
+        } else {
 
-        return new AdvertisementDTO(advertisement.getId(), advertisement.getTitle(), advertisement.getDescription(), advertisement.getSubcategory().getId(), advertisement.getOwnerId(),
-                advertisement.getBuyersId(), imageIds, advertisement.getStatus());
+            Advertisement advertisement = advertisementRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Объявления нет в БД"));
+
+            AdvertisementDTO advertisementDTO = objectMapper.convertValue(advertisement, AdvertisementDTO.class);
+
+            // Преобразуем сущность в DTO с использованием идентификаторов изображений
+            List<Long> imageIds = advertisement.getImageList().stream()
+                    .map(Image::getId)
+                    .collect(Collectors.toList());
+            advertisementDTO.setImagesId(imageIds);
+
+            if (advertisement.getSubcategory() != null) {
+                advertisementDTO.setSubCategoryId(advertisement.getSubcategory().getId());
+            }
+
+            sendCacheService.sendCacheRequest(objectMapper.writeValueAsString(advertisementDTO));
+
+            // Ожидаем появления кэша красиво
+            return cacheAwaiterService.awaitCache(advertisement.getId())
+                    .orTimeout(10, TimeUnit.SECONDS)
+                    .exceptionally(throwable -> {
+                        throw new RuntimeException("Кэш ещё не готов. Попробуйте позже.");
+                    })
+                    .get(); // блокируем поток до получения результата
+        }
     }
 
     @Transactional

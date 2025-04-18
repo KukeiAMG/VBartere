@@ -1,4 +1,4 @@
-package com.vbartere.userservice.kafka_user_advertisement;
+package com.vbartere.userservice.Kafka;
 
 import com.vbartere.Shared.Kafka.CartResult;
 import com.vbartere.userservice.service.CartService;
