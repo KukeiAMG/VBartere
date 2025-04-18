@@ -1,11 +1,9 @@
-package com.vbartere.Advertisement.DTO;
-
-import lombok.Getter;
-import lombok.Setter;
+package com.vbartere.Shared.Kafka.DTO;
 
 import java.util.List;
 
 public class AdvertisementDTO {
+    private Long id;
     private String title;
     private String description;
     private Long subCategoryId; // Используем ID для связи с SubCategory
@@ -14,7 +12,13 @@ public class AdvertisementDTO {
     private List<Long> imagesId;
     private boolean status;
 
-    public AdvertisementDTO() {}
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public String getTitle() {
         return title;
@@ -72,7 +76,8 @@ public class AdvertisementDTO {
         this.status = status;
     }
 
-    public AdvertisementDTO(String title, String description, Long subCategoryId, Long ownerId, Long buyersId, List<Long> imagesId, boolean status) {
+    public AdvertisementDTO(Long id, String title, String description, Long subCategoryId, Long ownerId, Long buyersId, List<Long> imagesId, boolean status) {
+        this.id = id;
         this.title = title;
         this.description = description;
         this.subCategoryId = subCategoryId;
@@ -85,7 +90,8 @@ public class AdvertisementDTO {
     @Override
     public String toString() {
         return "AdvertisementDTO{" +
-                "title='" + title + '\'' +
+                "id=" + id +
+                ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", subCategoryId=" + subCategoryId +
                 ", ownerId=" + ownerId +

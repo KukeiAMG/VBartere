@@ -1,6 +1,6 @@
 package com.vbartere.Advertisement.Service;
 
-import com.vbartere.Advertisement.DTO.AdvertisementDTO;
+import com.vbartere.Shared.Kafka.DTO.AdvertisementDTO;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Model.Image;
 import com.vbartere.Advertisement.Model.SubCategory;
@@ -9,7 +9,6 @@ import com.vbartere.Advertisement.Repository.SubCategoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -47,7 +46,7 @@ public class AdvertisementService {
                 .map(Image::getId)
                 .collect(Collectors.toList());
 
-        return new AdvertisementDTO(advertisement.getTitle(), advertisement.getDescription(), advertisement.getSubcategory().getId(), advertisement.getOwnerId(),
+        return new AdvertisementDTO(advertisement.getId(), advertisement.getTitle(), advertisement.getDescription(), advertisement.getSubcategory().getId(), advertisement.getOwnerId(),
                 advertisement.getBuyersId(), imageIds, advertisement.getStatus());
     }
 

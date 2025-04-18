@@ -1,6 +1,6 @@
 package com.vbartere.Advertisement.Controller;
 
-import com.vbartere.Advertisement.DTO.AdvertisementDTO;
+import com.vbartere.Shared.Kafka.DTO.AdvertisementDTO;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Service.AdvertisementService;
 import org.springframework.http.HttpStatus;

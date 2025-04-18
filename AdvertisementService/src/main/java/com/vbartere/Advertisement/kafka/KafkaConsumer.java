@@ -1,7 +1,7 @@
 package com.vbartere.Advertisement.kafka;
 
-import com.vbartere.Advertisement.DTO.AdvertisementDTO;
-import com.vbartere.Advertisement.DTO.AdvertisementMapper;
+import com.vbartere.Shared.Kafka.DTO.AdvertisementDTO;
+//import com.vbartere.Shared.Kafka.DTO.AdvertisementMapper;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Service.AdvertisementService;
@@ -37,8 +37,9 @@ public class KafkaConsumer {
                 advertisementDTO.setStatus(false);
 
                 Advertisement existingEntity = advertisementService.findById(event.getAdvertisementId());
-                Advertisement updatedEntity = AdvertisementMapper.toEntity(advertisementDTO, existingEntity);
-                advertisementRepository.save(updatedEntity);
+                existingEntity.setBuyersId(event.getUserId());
+                existingEntity.setStatus(false);
+                advertisementRepository.save(existingEntity);
 
                 System.out.println("\nОбработка события: " + event + "\nТовар: " + advertisementDTO);
                 kafkaTemplate.send("missing-advertisements", new CartResult(event.getUserId(), event.getAdvertisementId(), true));
