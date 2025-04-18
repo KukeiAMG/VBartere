@@ -48,6 +48,7 @@ public class AdvertisementService {
         return advertisementRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Advertisement getAdvertisementById(Long id) throws JsonProcessingException, ExecutionException, InterruptedException {
 
         String cacheKey = "advertisement:" + id;
@@ -115,36 +116,54 @@ public class AdvertisementService {
     }
 
     @Transactional
-    public Advertisement updateAdvertisementById(Long adId, AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException {
-        Advertisement advertisement = advertisementRepository.findById(adId)
+    public Advertisement updateAdvertisementById(Long advertisementID, AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException {
+
+        Advertisement advertisement = advertisementRepository.findById(advertisementID)
                 .orElseThrow(() -> new RuntimeException("Объявление не найдено"));
 
-        SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
-                .orElseThrow(() -> new RuntimeException("Подкатегория не найдена"));
-
-        advertisement.setTitle(advertisementDTO.getTitle());
-        advertisement.setDescription(advertisementDTO.getDescription());
-        advertisement.setSubcategory(subCategory);
-        advertisement.setOwnerId(advertisementDTO.getOwnerId());
-        advertisement.setStatus(advertisementDTO.isStatus());
-
-        List<Image> images = new ArrayList<>();
-        for (MultipartFile file : files) {
-            Image image = imageService.createImage(file);
-            image.setAdvertisement(advertisement);
-            images.add(image);
+        if (advertisementDTO.getSubCategoryId() != null) {
+            SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Подкатегория не найдена"));
+            advertisement.setSubcategory(subCategory);
         }
 
-        if (!images.isEmpty()) {
+        if (advertisementDTO.getTitle() != null) {
+            advertisement.setTitle(advertisementDTO.getTitle());
+        }
+
+        if (advertisementDTO.getDescription() != null) {
+            advertisement.setDescription(advertisementDTO.getDescription());
+        }
+
+        if (advertisementDTO.getOwnerId() != null) {
+            advertisement.setOwnerId(advertisementDTO.getOwnerId());
+        }
+
+        if (files != null && !files.isEmpty()) {
+            List<Image> images = new ArrayList<>();
+            for (MultipartFile file : files) {
+                Image image = imageService.createImage(file);
+                image.setAdvertisement(advertisement);
+                images.add(image);
+            }
             images.getFirst().setPreviewImage(true);
             advertisement.setImageList(images);
         }
 
-        return advertisementRepository.save(advertisement);
+        Advertisement savedAdvertisement = advertisementRepository.save(advertisement);
+
+        sendCacheService.sendCacheRequest(objectMapper.writeValueAsString(savedAdvertisement));
+
+        return savedAdvertisement;
     }
 
     @Transactional
-    public void deleteAdvertisementById(Long id) {
-        advertisementRepository.deleteById(id);
+    public void deleteAdvertisementById(Long advertisementID) {
+        advertisementRepository.deleteById(advertisementID);
+
+        String cacheKey = "advertisement:" + advertisementID;
+        redisCommands.del(cacheKey);
+
+        System.out.println("Объявление и его кэш успешно удалены: " + advertisementID);
     }
 }
