@@ -2,59 +2,42 @@ package com.example.Referral.model;
 
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
-import org.springframework.data.neo4j.core.schema.Relationship;
+
 
 import java.util.List;
 
-@Node
+@Node("UserNode")
 public class UserNode {
 
+    //TODO:
     @Id
     private Long userId;
-    private  String referrerId;
-    private String refId;
-
-    @Relationship(type = "REFERRED", direction = Relationship.Direction.OUTGOING) // "REFERRED" - тип связи между обьектами
-    // Relationship.Direction.OUTGOING - означает что пользователь пригласил этих людей
-    private List<UserNode> referredUsers; //список приглашенных пользователей
+    private String referralCode;
 
     public UserNode(){}
 
-    public UserNode(Long userId, String referrerId, String refId){
+    public UserNode(Long userId){
         this.userId = userId;
-        this.referrerId = referrerId;
-        this.refId = refId;
+        this.referralCode = "ref"+userId;
     }
 
     public Long getUserId() {
         return userId;
     }
-
-    public void setUid(Long userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 
-    public String getReferrerId() {
-        return referrerId;
+    public String getReferralCode() {
+        return referralCode;
+    }
+    public void setReferralCode(String referralCode) {
+        this.referralCode = referralCode;
     }
 
-    public void setReferrerId(String referrerId) {
-        this.referrerId = referrerId;
-    }
 
-    public String getRefId() {
-        return refId;
-    }
-
-    public void setRefId(String refId) {
-        this.refId = refId;
-    }
-
-    public List<UserNode> getReferredUsers() {
-        return referredUsers;
-    }
-
-    public void setReferredUsers(List<UserNode> referredUsers) {
-        this.referredUsers = referredUsers;
+    @Override
+    public String toString() {
+        return "\nUserID:" + userId + "   ReferralCode: "+ referralCode;
     }
 }

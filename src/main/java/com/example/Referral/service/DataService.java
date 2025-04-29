@@ -10,60 +10,61 @@ import java.util.List;
 @Service
 public class DataService {
 
-    private final ReferralRepository ReferralRepository;
+    private final ReferralRepository referralRepository;
 
     // Конструктор для внедрения зависимости
     public DataService(ReferralRepository ReferralRepository) {
-        this.ReferralRepository = ReferralRepository;
+        this.referralRepository = ReferralRepository;
     }
 
     // Регистрация нового пользователя
     @Transactional
-    public void registerUser(Long userId, String referrerRefId, String refId) {
-        // Найти пригласившего пользователя по refId
-        UserNode referrer = ReferralRepository.getUserByRefId(referrerRefId);
+    public void registerUser(Long userId, String invitedByCode) {
+        System.out.println("-------------------registerUser_func-----------------");
 
-        // Создать нового пользователя
-        UserNode newUser = new UserNode();
-        newUser.setUid(userId);
-        newUser.setReferrerId(String.valueOf(referrer != null ? referrer.getUserId() : null));
-        newUser.setRefId(refId);
+        // Создаем нового пользователя
+        UserNode newUser = new UserNode(userId);
 
-        if (referrer != null) {
-            // Добавить связь с пригласившим пользователем
-            referrer.getReferredUsers().add(newUser);
-            ReferralRepository.save(referrer);
-        } else {
-            // Сохранить пользователя без связи, если нет пригласившего
-            ReferralRepository.save(newUser);
+        System.out.println(newUser + "Код пригласившего: " + invitedByCode);
+
+        //если есть код реферала, то нода создается со связью
+        if (invitedByCode != null) {
+            UserNode referrer = referralRepository.findUserByReferralCode(invitedByCode);
+
+            // если реферала с таким кодом нет, то реф не найден
+            if (referrer == null) {
+                //TODO: если реферер не найден то пользователь должен ввести код заново
+                System.out.println("Реферер не найден: " + invitedByCode);
+            }else {
+                //добавляем ноду со связью
+                referralRepository.saveWithReferral(newUser.getUserId(), newUser.getReferralCode(), invitedByCode);
+            }
+        }
+        else {
+            // добавляем нового юзера без связи
+            referralRepository.saveWithoutReferral(newUser.getUserId(), newUser.getReferralCode());
         }
     }
 
-    // Получение всех потомков для заданного пользователя
-    public List<UserNode> getReferralTreeDown(Long userId) {
-        return ReferralRepository.getDescs(userId);
+    //получение всех родителей для определенного юзера
+    @Transactional(readOnly = true)
+    public List<UserNode> getParentsForUserByUID(Long userId){
+        System.out.println("-------------------getParentsForUserByUID_func-----------------");
+        List<UserNode> UserList = referralRepository.getParentsForUserByUID(userId);
+        System.out.println(UserList);
+
+        return UserList;
     }
 
-    // Получение всех предков для заданного пользователя
-    public List<UserNode> getReferralTreeUp(Long userId) {
-        return ReferralRepository.getAncs(userId);
-    }
+    //получение всех приглашенных пользователей для юзера
+    @Transactional(readOnly = true)
+    public List<UserNode> getAllChildrenForUserByUID(Long userId){
+        System.out.println("-------------------getFullTreeForUserByUID_func-----------------");
+        List<UserNode> UserList = referralRepository.getAllChildren(userId);
+        System.out.println(UserList);
 
-    // Получение полного дерева
-    public List<UserNode> getFullTree() {
-        return ReferralRepository.getFullTree();
+        return UserList;
     }
-
-    // Получение пользователя по его реф. коду
-    public UserNode getUserByRefId(String RefId){
-        return ReferralRepository.getUserByRefId(RefId);
-    }
-
-    // Получение Предка по UID потомка
-    public UserNode getAncByUidDesc (Long userId){
-        return ReferralRepository.getAncByUidDesc(userId);
-    }
-
 
 
 }

@@ -1,11 +1,19 @@
 package com.example.Referral.service;
 
 import com.example.Referral.model.UserNode;
+import com.example.Referral.repository.ReferralRepository;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ReferralCommission {
+
+
+    private final ReferralRepository referralRepository;
+
+    public ReferralCommission(ReferralRepository ReferralRepository) {
+        this.referralRepository = ReferralRepository;
+    }
 
     private static Map<Integer, Double> CommissionRate = new HashMap<>(Map.ofEntries(
             Map.entry(1, 0.15),
@@ -45,7 +53,7 @@ public class ReferralCommission {
         commissions.put(user.getUserId(), commission);
 
         // Рекурсивно вызвать для пригласившего пользователя
-        UserNode referrer = DataService.getAncByUidDesc(user.getUserId());
-        calculate(referrer, commissionAmount, commissions, level + 1);
+        //UserNode referrer = referralRepository.findReferrerByRefCode();
+        //calculate(referrer, commissionAmount, commissions, level + 1);
     }
 }

@@ -2,10 +2,38 @@ package com.example.Referral.repository;
 import com.example.Referral.model.UserNode;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
 public interface ReferralRepository extends Neo4jRepository<UserNode, Long> {
+
+    // создание пользователя
+    @Query("CREATE (newUser:UserNode {userId: $userId, referralCode: $referralCode})")
+    void saveWithoutReferral(
+            @Param("userId") Long userId,
+            @Param("referralCode") String referralCode
+    );
+
+
+    // Для пользователей c реферальным кодом
+    @Query("MATCH (referrer:UserNode {referralCode: $invitedByCode}) " +
+            "CREATE (newUser:UserNode {userId: $userId, referralCode: $referralCode}) " + // referrerCode не храним!
+            "CREATE (newUser)-[:REFERRED_BY]->(referrer) " +
+            "RETURN newUser")
+    UserNode saveWithReferral(
+            @Param("userId") Long userId,
+            @Param("referralCode") String referralCode,
+            @Param("invitedByCode") String invitedByCode // Используется только для поиска реферера
+    );
+
+
+    @Query("MATCH path = (User:UserNode {userId: $userId})-[:REFERRED_BY*1..6]->(:UserNode) " +
+    "WITH path " +
+    "ORDER BY length(path) DESC " +
+    "LIMIT 1 " +
+    "RETURN [node IN nodes(path)[1..] | node] AS ancestors")
+    List<UserNode> getParentsForUserByUID (@Param("userId") Long userId);
 
     //построить полное дерево
     @Query("MATCH (user:UserNode {userId: $userId})-[:REFERRED*]->(descendants) RETURN user, descendants")
@@ -13,18 +41,14 @@ public interface ReferralRepository extends Neo4jRepository<UserNode, Long> {
 
     // Найти всех потомков для заданного пользователя
     @Query("MATCH (user:UserNode {userId: $userId})-[:REFERRED*]->(descendants) RETURN descendants")
-    List<UserNode> getDescs(Long userId);
+    List<UserNode> getAllChildren(Long userId);
 
     // Найти всех предков для заданного пользователя
     @Query("MATCH (ancestors)-[:REFERRED*]->(user:UserNode {userId: $userId}) RETURN ancestors")
     List<UserNode> getAncs(Long userId);
 
-    // Найти пользователя по реферальному коду
-    @Query("MATCH (user:UserNode {refId: $refId}) RETURN user")
-    UserNode getUserByRefId(String refId);
-
     //Найти предка для потомка с UID
-    @Query("MATCH (ancestor:UserNode)-[:REFERRED]->(descendant:UserNode {refId: $value}) RETURN ancestor LIMIT 1")
-    UserNode getAncByUidDesc(Long value);
+    @Query("MATCH (u:UserNode {referralCode: $referralCode}) RETURN u LIMIT 1")
+    UserNode findUserByReferralCode(String referralCode);
 }
 
