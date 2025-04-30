@@ -8,8 +8,8 @@ import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Service.AdvertisementService;
 
-import com.vbartere.Shared.Kafka.CartEvent;
-import com.vbartere.Shared.Kafka.CartResult;
+import com.vbartere.Shared.Kafka.Events.CartEvent;
+import com.vbartere.Shared.Kafka.Events.CartResult;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
