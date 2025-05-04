@@ -16,10 +16,6 @@
     <description>vHuye</description>
     <url/>
     <modules>
-        <module>AdvertisementService</module>
-        <module>userService</module>
-        <module>GatewayService</module>
-        <module>shared-kafka</module>
         <module>CacheService</module>
     </modules>
     <licenses>
