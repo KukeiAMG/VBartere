@@ -1,0 +1,4 @@
+com\vbartere\Shared\Kafka\DTO\AdvertisementDTO.class
+com\vbartere\Shared\Kafka\CartEvent.class
+com\vbartere\Main.class
+com\vbartere\Shared\Kafka\CartResult.class
