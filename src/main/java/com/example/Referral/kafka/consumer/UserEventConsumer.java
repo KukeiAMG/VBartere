@@ -30,6 +30,8 @@ public class UserEventConsumer {
             // TODO: Нет проверки на null для userJSON
             UserEventDTO user = objectMapper.readValue(userJSON, UserEventDTO.class);
 
+            System.out.println(user);
+
             // Регистрация пользователя через сервисный слой
             // TODO: Не обрабатывается случай, когда dataService.registerUser() бросает исключение
             dataService.registerUser(user.getUserId(), user.getInvitedByCode());
