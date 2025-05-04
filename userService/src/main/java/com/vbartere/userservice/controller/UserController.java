@@ -1,7 +1,10 @@
 package com.vbartere.userservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.vbartere.userservice.model.User;
+import com.vbartere.userservice.service.JwtService;
 import com.vbartere.userservice.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,13 +15,17 @@ import java.util.Map;
 @RequestMapping("/api/users")
 public class UserController {
     private final UserService userService;
+    private final JwtService jwtService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, JwtService jwtService) {
         this.userService = userService;
+        this.jwtService = jwtService;
     }
 
+    private String USER_TOKEN;
+
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@RequestBody Map<String, String> userDto) {
+    public ResponseEntity<User> registerUser(@RequestBody Map<String, String> userDto) throws JsonProcessingException {
         String phoneNumber = userDto.get("phoneNumber");
         String password = userDto.get("password");
         User registeredUser = userService.registerUser(phoneNumber, password);
@@ -26,19 +33,19 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> loginUser(@RequestBody Map<String, String> userDto) {
+    public ResponseEntity<Map<String, String>> loginUser(@RequestBody Map<String, String> userDto) throws JsonProcessingException {
         String phoneNumber = userDto.get("phoneNumber");
         String password = userDto.get("password");
 
-        String token = userService.loginUser(phoneNumber, password);
+        USER_TOKEN = userService.loginUser(phoneNumber, password);
 
         Map<String, String> response = new HashMap<>();
-        response.put("token", token);
+        response.put("token", USER_TOKEN);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<User> updateUserDetails(@PathVariable Long userId, @RequestBody Map<String, String> userDetails) {
+    public ResponseEntity<User> updateUserDetails(@PathVariable Long userId, @RequestBody Map<String, String> userDetails) throws JsonProcessingException {
         String name = userDetails.get("name");
         String surname = userDetails.get("surname");
         User updatedUser = userService.updateUserDetails(userId, name, surname);
@@ -55,6 +62,30 @@ public class UserController {
     public ResponseEntity<User> assignRole(@PathVariable Long userId, @RequestParam String roleName) {
         User user = userService.assignRoleToUser(userId, roleName);
         return ResponseEntity.ok(user);
+    }
+
+    // Ключ для подписи токена из JwtService
+    private static final String SECRET_KEY = "5FZsRG9Q2f9UvdxeUR4iU5FV9nFg1Hn9zPb49M8uV7o=";
+    @PostMapping("/validate")
+    public ResponseEntity<Boolean> validateToken(@RequestParam(value = "token") String token, @RequestParam(value = "phoneNumber") String phoneNumber) {
+        try {
+            jwtService.validateToken(token, phoneNumber);
+            return ResponseEntity.ok(true); // Если токен валиден
+        } catch (Exception e) {
+            System.out.println("Token validation error: " + e.getMessage());
+            return ResponseEntity.ok(false); // Если токен не валиден
+        }
+    }
+
+    @GetMapping("/getCurrentUserId")
+    public ResponseEntity<Long> getUserId(@RequestParam(value = "token") String token) {
+        try {
+            Long userId = userService.getUserIdByPhoneNumber(token);
+            return ResponseEntity.ok(userId); // Если токен валиден
+        } catch (Exception e) {
+            System.out.println("Token validation error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // Если токен не валиден
+        }
     }
 }
 
