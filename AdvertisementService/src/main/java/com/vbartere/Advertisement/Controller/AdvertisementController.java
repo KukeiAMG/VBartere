@@ -1,13 +1,16 @@
 package com.vbartere.Advertisement.Controller;
 
-import com.vbartere.Advertisement.DTO.AdvertisementDTO;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.vbartere.Shared.Kafka.DTO.AdvertisementDTO;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Service.AdvertisementService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api/advertisements")
@@ -25,16 +28,17 @@ public class AdvertisementController {
     }
 
     @GetMapping("/{id}")
-    public Advertisement getAdvertisement(@PathVariable Long id) {
+    public Advertisement getAdvertisement(@PathVariable Long id) throws ExecutionException, JsonProcessingException, InterruptedException {
         return advertisementService.getAdvertisementById(id);
     }
 
     @PostMapping(value = "/create", consumes = {"multipart/form-data"})
     public ResponseEntity<Advertisement> createAdvertisement(@RequestPart("advertisement") AdvertisementDTO advertisementDTO,
-                                                             @RequestPart("files") List<MultipartFile> files) {
+                                                             @RequestPart("files") List<MultipartFile> files,
+                                                             @RequestHeader("user-ID") Long userId) {
         try {
-            Advertisement createdAd = advertisementService.createAdvertisement(advertisementDTO, files);
-            return ResponseEntity.ok(createdAd);
+            Advertisement createdAd = advertisementService.createAdvertisement(advertisementDTO, files, userId);
+            return new ResponseEntity<>(createdAd, HttpStatus.CREATED);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);
         }
