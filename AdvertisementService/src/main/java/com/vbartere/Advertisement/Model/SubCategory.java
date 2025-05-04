@@ -12,8 +12,6 @@ import java.util.List;
 
 @Entity
 @Table(name = "subcategory")
-@Getter
-@Setter
 public class SubCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,7 +39,39 @@ public class SubCategory {
         this.advertisementList = advertisementList;
     }
 
-//    @Override
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public @NotEmpty(message = "Subcategory name can not be empty") @Size(min = 2, max = 20, message = "The minimum allowed number of characters is 2, the maximum is 20") String getName() {
+        return name;
+    }
+
+    public void setName(@NotEmpty(message = "Subcategory name can not be empty") @Size(min = 2, max = 20, message = "The minimum allowed number of characters is 2, the maximum is 20") String name) {
+        this.name = name;
+    }
+
+    public Category getParentCategory() {
+        return parentCategory;
+    }
+
+    public void setParentCategory(Category parentCategory) {
+        this.parentCategory = parentCategory;
+    }
+
+    public List<Advertisement> getAdvertisementList() {
+        return advertisementList;
+    }
+
+    public void setAdvertisementList(List<Advertisement> advertisementList) {
+        this.advertisementList = advertisementList;
+    }
+
+    //    @Override
 //    public String toString() {
 //        return "SubCategory{" +
 //                "id=" + id +
