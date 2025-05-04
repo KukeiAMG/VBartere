@@ -30,6 +30,14 @@
         <tag/>
         <url/>
     </scm>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <properties>
         <java.version>23</java.version>
     </properties>
@@ -43,6 +51,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.KukeiAMG</groupId>
+            <artifactId>SharedKafka</artifactId>
+            <version>-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
