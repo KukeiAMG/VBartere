@@ -1,6 +1,7 @@
 package com.vbartere.userservice.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Set;
@@ -23,6 +24,9 @@ public class User {
     private String name;
     private String surname;
 
+    @Email
+    private String email;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -31,7 +35,19 @@ public class User {
     )
     private Set<Role> roles;
 
-    // Getters and Setters
+    public User(String phoneNumber, String password, String name, String surname, String email, Set<Role> roles) {
+        this.phoneNumber = phoneNumber;
+        this.password = password;
+        this.name = name;
+        this.surname = surname;
+        this.email = email;
+        this.roles = roles;
+    }
+
+    public User() {
+
+    }
+
     public Long getId() {
         return id;
     }
@@ -70,6 +86,14 @@ public class User {
 
     public void setSurname(String surname) {
         this.surname = surname;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public Set<Role> getRoles() {
