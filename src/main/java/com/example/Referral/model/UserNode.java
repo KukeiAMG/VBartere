@@ -44,7 +44,7 @@ public class UserNode {
 
     @Override
     public String toString() {
-        return "\nUserID:" + userId + "   ReferralCode: "+ referralCode;
+        return "UserID:" + userId + "   ReferralCode:"+ referralCode;
     }
 
     @Override

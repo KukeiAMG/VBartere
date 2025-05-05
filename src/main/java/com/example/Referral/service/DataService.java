@@ -40,7 +40,7 @@ public class DataService {
 
         // Создаем нового пользователя
         UserNode newUser = new UserNode(userId);
-        System.out.println(newUser + "Код пригласившего: " + invitedByCode);
+        System.out.println(newUser + " Код пригласившего: " + invitedByCode);
 
         //если есть код реферала, то нода создается со связью
         if (invitedByCode != null) {

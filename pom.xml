@@ -12,7 +12,7 @@
 	<artifactId>Referral</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Referral</name>
-	<description>Demo project for Spring Boot</description>
+	<description>ReferralService</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -29,6 +29,14 @@
 	<properties>
 		<java.version>23</java.version>
 	</properties>
+
+	<repositories>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+
 	<dependencies>
 
 		<dependency>
@@ -48,21 +56,34 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.kafka</groupId>
-			<artifactId>spring-kafka</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
 			<version>20231013</version> <!-- Актуальная версия -->
 		</dependency>
+
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
             <version>RELEASE</version>
             <scope>compile</scope>
         </dependency>
+
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.KukeiAMG</groupId>
+			<artifactId>SharedKafka</artifactId>
+			<version>-61a7e17521-1</version>
+			<scope>compile</scope>
+		</dependency>
 
     </dependencies>
 

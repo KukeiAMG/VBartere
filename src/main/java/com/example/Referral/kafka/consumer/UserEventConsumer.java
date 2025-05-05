@@ -1,13 +1,14 @@
 package com.example.Referral.kafka.consumer;
 
-import com.example.Referral.kafka.DTO.UserEventDTO;
 import com.example.Referral.service.DataService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.stereotype.Component;
+import com.vbartere.Shared.Kafka.Events.UserEvent;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class UserEventConsumer {
     private final DataService dataService;
     private final ObjectMapper objectMapper;
@@ -17,25 +18,23 @@ public class UserEventConsumer {
         this.objectMapper = objectMapper;
     }
 
-    // Обработчик сообщений из топика user-created
-    @KafkaListener(topics = "user-created", groupId = "referral-service-group")
+    // Обработчик сообщений из топика user.registration.referral
+    @KafkaListener(topics = "user.registration.referral", groupId = "referral-service-group")
     public void handleUserCreated(String userJSON) {
-
-
-        System.out.println("---UserEventConsumer---\n" + userJSON);
+        System.out.println("\n\n---UserEventConsumer---\n" + userJSON);
 
         try {
             // принимаю JSON и собираю в userDTO (десериализую)
             // Десериализация JSON в DTO
             // TODO: Нет проверки на null для userJSON
-            UserEventDTO user = objectMapper.readValue(userJSON, UserEventDTO.class);
+            UserReferralDTO user = objectMapper.readValue(userJSON, UserReferralDTO.class);
+
 
             System.out.println(user);
 
             // Регистрация пользователя через сервисный слой
             // TODO: Не обрабатывается случай, когда dataService.registerUser() бросает исключение
-            dataService.registerUser(user.getUserId(), user.getInvitedByCode());
-            System.out.println(user);
+            dataService.registerUser(user.getId(), user.getInvitedByCode());
 
         } catch (JsonProcessingException e) {
             // Логируем ошибку, но не прерываем выполнение
