@@ -2,7 +2,8 @@ package com.vbartere.userservice.Kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vbartere.Shared.Kafka.CartResult;
+
+import com.vbartere.Shared.Kafka.Events.CartResult;
 import com.vbartere.userservice.service.CartService;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
