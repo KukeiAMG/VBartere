@@ -130,12 +130,6 @@
             <scope>compile</scope>
         </dependency>
 
-
-        <dependency>
-            <groupId>com.github.KukeiAMG</groupId>
-            <artifactId>SharedKafka</artifactId>
-            <version>-SNAPSHOT</version>
-        </dependency>
     </dependencies>
 
     <build>
