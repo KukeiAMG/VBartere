@@ -24,6 +24,8 @@ public class User {
     private String name;
     private String surname;
 
+    private String invitedByCode;
+
     @Email
     private String email;
 
@@ -35,18 +37,13 @@ public class User {
     )
     private Set<Role> roles;
 
-    public User(String phoneNumber, String password, String name, String surname, String email, Set<Role> roles) {
+    public User(String phoneNumber, String password, String invitedByCode) {
         this.phoneNumber = phoneNumber;
         this.password = password;
-        this.name = name;
-        this.surname = surname;
-        this.email = email;
-        this.roles = roles;
+        this.invitedByCode = invitedByCode;
     }
 
-    public User() {
-
-    }
+    public User() {}
 
     public Long getId() {
         return id;
@@ -102,6 +99,28 @@ public class User {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public String getInvitedByCode() {
+        return invitedByCode;
+    }
+
+    public void setInvitedByCode(String invitedByCode) {
+        this.invitedByCode = invitedByCode;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", password='" + password + '\'' +
+                ", name='" + name + '\'' +
+                ", surname='" + surname + '\'' +
+                ", invitedByCode='" + invitedByCode + '\'' +
+                ", email='" + email + '\'' +
+                ", roles=" + roles +
+                '}';
     }
 }
 

@@ -28,7 +28,10 @@ public class UserController {
     public ResponseEntity<User> registerUser(@RequestBody Map<String, String> userDto) throws JsonProcessingException {
         String phoneNumber = userDto.get("phoneNumber");
         String password = userDto.get("password");
-        User registeredUser = userService.registerUser(phoneNumber, password);
+        String invitedByCode = userDto.get("invitedByCode");
+
+        User registeredUser = userService.registerUser(phoneNumber, password, invitedByCode);
+
         return ResponseEntity.ok(registeredUser);
     }
 
