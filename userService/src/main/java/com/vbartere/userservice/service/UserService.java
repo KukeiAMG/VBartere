@@ -6,6 +6,7 @@ import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import com.vbartere.Shared.Kafka.Enum.UserEventType;
 import com.vbartere.Shared.Kafka.Events.UserEvent;
 import com.vbartere.userservice.model.Cart;
+import com.vbartere.userservice.model.Image;
 import com.vbartere.userservice.model.Role;
 import com.vbartere.userservice.model.User;
 import com.vbartere.userservice.repository.CartRepository;
@@ -17,7 +18,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -77,13 +80,14 @@ public class UserService {
     }
 
     @Transactional
-    public User registerUser(String phoneNumber, String password, String invitedByCode) throws JsonProcessingException {
+    public User registerUser(String phoneNumber, String password, String email, String invitedByCode) throws JsonProcessingException {
         if (userRepository.findByPhoneNumber(phoneNumber).isPresent()) {
             throw new IllegalArgumentException("user already exists");
         }
 
         User user = new User(
                 phoneNumber,
+                email,
                 passwordEncoder.encode(password),
                 invitedByCode);
 
@@ -114,8 +118,7 @@ public class UserService {
 
     @Transactional
     public User assignRoleToUser(Long userId, String roleName) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+        User user = getById(userId);
 
         Role role = roleRepository.findByName(roleName);
         if (role == null) {
@@ -132,8 +135,7 @@ public class UserService {
 
     @Transactional
     public User updateUserDetails(Long userId, String name, String surname) throws JsonProcessingException {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+        User user = getById(userId);
         user.setName(name);
         user.setSurname(surname);
 
@@ -146,6 +148,30 @@ public class UserService {
         kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
 
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public void uploadUserImage(Long id, MultipartFile file) throws IOException {
+        User user = getById(id);
+
+        Image image = new Image();
+        image.setName(file.getName());
+        image.setOriginalFileName(file.getOriginalFilename());
+        image.setContentType(file.getContentType());
+        image.setSize(file.getSize());
+        image.setBytes(file.getBytes());
+        image.setPreviewImage(true);
+
+        user.setImage(image);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void removeUserImage(Long id) {
+        User user = getById(id);
+
+        user.setImage(null);
+        userRepository.save(user);
     }
 
     @Transactional(readOnly = true)

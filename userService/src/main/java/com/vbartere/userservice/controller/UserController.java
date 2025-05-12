@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.vbartere.userservice.model.User;
 import com.vbartere.userservice.service.JwtService;
 import com.vbartere.userservice.service.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.parameters.P;
@@ -28,8 +29,13 @@ public class UserController {
     private String USER_TOKEN;
 
     @GetMapping("/{id}/get")
-    public ResponseEntity<User> getUserById(@PathVariable("id") Long id) {
-        return ResponseEntity.ok(userService.getById(id));
+    public ResponseEntity<?> getUserById(@PathVariable("id") Long id) {
+        try {
+            return ResponseEntity.ok(userService.getById(id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/all")
@@ -38,26 +44,37 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@RequestBody Map<String, String> userDto) throws JsonProcessingException {
-        String phoneNumber = userDto.get("phoneNumber");
-        String password = userDto.get("password");
-        String invitedByCode = userDto.get("invitedByCode");
+    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> userDto) throws JsonProcessingException {
+        try {
+            String phoneNumber = userDto.get("phoneNumber");
+            String email = userDto.get("email");
+            String password = userDto.get("password");
+            String invitedByCode = userDto.get("invitedByCode");
 
-        User registeredUser = userService.registerUser(phoneNumber, password, invitedByCode);
+            User registeredUser = userService.registerUser(phoneNumber, email, password, invitedByCode);
 
-        return ResponseEntity.ok(registeredUser);
+            return ResponseEntity.ok(registeredUser);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> loginUser(@RequestBody Map<String, String> userDto) throws JsonProcessingException {
-        String phoneNumber = userDto.get("phoneNumber");
-        String password = userDto.get("password");
+        try {
+            String phoneNumber = userDto.get("phoneNumber");
+            String password = userDto.get("password");
 
-        USER_TOKEN = userService.loginUser(phoneNumber, password);
+            USER_TOKEN = userService.loginUser(phoneNumber, password);
 
-        Map<String, String> response = new HashMap<>();
-        response.put("token", USER_TOKEN);
-        return ResponseEntity.ok(response);
+            Map<String, String> response = new HashMap<>();
+            response.put("token", USER_TOKEN);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{userId}")
@@ -94,13 +111,13 @@ public class UserController {
     }
 
     @GetMapping("/getCurrentUserId")
-    public ResponseEntity<Long> getUserId(@RequestParam(value = "token") String token) {
+    public ResponseEntity<?> getUserId(@RequestParam(value = "token") String token) {
         try {
             Long userId = userService.getUserIdByPhoneNumber(token);
             return ResponseEntity.ok(userId); // Если токен валиден
-        } catch (Exception e) {
-            System.out.println("Token validation error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // Если токен не валиден
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 }

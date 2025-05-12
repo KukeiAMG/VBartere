@@ -26,8 +26,13 @@ public class User {
 
     private String invitedByCode;
 
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "image_id")
+    private Image image;
+
     @Email
     private String email;
+
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -37,8 +42,9 @@ public class User {
     )
     private Set<Role> roles;
 
-    public User(String phoneNumber, String password, String invitedByCode) {
+    public User(String phoneNumber, String email, String password, String invitedByCode) {
         this.phoneNumber = phoneNumber;
+        this.email = email;
         this.password = password;
         this.invitedByCode = invitedByCode;
     }
@@ -109,6 +115,14 @@ public class User {
         this.invitedByCode = invitedByCode;
     }
 
+    public Image getImage() {
+        return image;
+    }
+
+    public void setImage(Image image) {
+        this.image = image;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -118,6 +132,7 @@ public class User {
                 ", name='" + name + '\'' +
                 ", surname='" + surname + '\'' +
                 ", invitedByCode='" + invitedByCode + '\'' +
+                ", image=" + image +
                 ", email='" + email + '\'' +
                 ", roles=" + roles +
                 '}';
