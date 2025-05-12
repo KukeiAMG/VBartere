@@ -10,6 +10,7 @@ import com.vbartere.userservice.model.User;
 import com.vbartere.userservice.repository.CartRepository;
 import com.vbartere.userservice.repository.RoleRepository;
 import com.vbartere.userservice.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -39,6 +41,18 @@ public class UserService {
         this.kafkaTemplate = kafkaTemplate;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
+    }
+
+    @Transactional(readOnly = true)
+    public User getById(Long id) {
+        return userRepository.findById(id).orElseThrow(
+                () -> new EntityNotFoundException("пользователь не найден в БД")
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> getAll() {
+        return userRepository.findAll();
     }
 
     @Transactional(readOnly = true)
