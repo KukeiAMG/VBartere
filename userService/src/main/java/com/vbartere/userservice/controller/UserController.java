@@ -104,7 +104,7 @@ public class UserController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshToken(@RequestParam Map<String, String> body) {
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> body) {
         try {
             String refreshToken = body.get("refreshToken");
             String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
