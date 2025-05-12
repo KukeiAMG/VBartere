@@ -6,9 +6,11 @@ import com.vbartere.userservice.service.JwtService;
 import com.vbartere.userservice.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -25,11 +27,24 @@ public class UserController {
 
     private String USER_TOKEN;
 
+    @GetMapping("/{id}/get")
+    public ResponseEntity<User> getUserById(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(userService.getById(id));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAll());
+    }
+
     @PostMapping("/register")
     public ResponseEntity<User> registerUser(@RequestBody Map<String, String> userDto) throws JsonProcessingException {
         String phoneNumber = userDto.get("phoneNumber");
         String password = userDto.get("password");
-        User registeredUser = userService.registerUser(phoneNumber, password);
+        String invitedByCode = userDto.get("invitedByCode");
+
+        User registeredUser = userService.registerUser(phoneNumber, password, invitedByCode);
+
         return ResponseEntity.ok(registeredUser);
     }
 

@@ -2,6 +2,7 @@ package com.vbartere.userservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import com.vbartere.Shared.Kafka.Enum.UserEventType;
 import com.vbartere.Shared.Kafka.Events.UserEvent;
 import com.vbartere.userservice.model.Cart;
@@ -19,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -33,7 +33,9 @@ public class UserService {
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository, CartRepository cartRepository, KafkaTemplate<String, String> kafkaTemplate, PasswordEncoder passwordEncoder, ObjectMapper objectMapper) {
+    public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository,
+                       CartRepository cartRepository, KafkaTemplate<String, String> kafkaTemplate,
+                       PasswordEncoder passwordEncoder, ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.roleRepository = roleRepository;
@@ -75,19 +77,21 @@ public class UserService {
     }
 
     @Transactional
-    public User registerUser(String phoneNumber, String password) throws JsonProcessingException {
+    public User registerUser(String phoneNumber, String password, String invitedByCode) throws JsonProcessingException {
         if (userRepository.findByPhoneNumber(phoneNumber).isPresent()) {
             throw new IllegalArgumentException("user already exists");
         }
-        User user = new User();
-        user.setPhoneNumber(phoneNumber);
-        user.setPassword(passwordEncoder.encode(password));
 
-        user = userRepository.save(user);
+        User user = new User(
+                phoneNumber,
+                passwordEncoder.encode(password),
+                invitedByCode);
 
         Cart cart = new Cart();
         cart.setUserId(user.getId());
         cart.setAdvertisementList(new ArrayList<>());
+
+        userRepository.save(user);
         cartRepository.save(cart);
 
         UserEvent userEvent = new UserEvent(
@@ -97,6 +101,12 @@ public class UserService {
                 UserEventType.USER_CREATED
         );
 
+        UserReferralDTO userReferralDTO = new UserReferralDTO(
+                user.getId(),
+                user.getInvitedByCode()
+        );
+
+        kafkaTemplate.send("user.registration.referral", objectMapper.writeValueAsString(userReferralDTO));
         kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
 
         return user;
