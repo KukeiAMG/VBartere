@@ -1,15 +1,19 @@
 package com.vbartere.userservice.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.vbartere.userservice.DTO.RegisterUserRequest;
 import com.vbartere.userservice.model.User;
 import com.vbartere.userservice.service.JwtService;
+import com.vbartere.userservice.service.RefreshTokenService;
 import com.vbartere.userservice.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,10 +24,12 @@ import java.util.Map;
 public class UserController {
     private final UserService userService;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
-    public UserController(UserService userService, JwtService jwtService) {
+    public UserController(UserService userService, JwtService jwtService, RefreshTokenService refreshTokenService) {
         this.userService = userService;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     private String USER_TOKEN;
@@ -44,14 +50,14 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> userDto) throws JsonProcessingException {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterUserRequest userDto) throws JsonProcessingException {
         try {
-            String phoneNumber = userDto.get("phoneNumber");
-            String email = userDto.get("email");
-            String password = userDto.get("password");
-            String invitedByCode = userDto.get("invitedByCode");
+            String phoneNumber = userDto.getPhoneNumber();
+            String email = userDto.getEmail();
+            String password = userDto.getPassword();
+            String invitedByCode = userDto.getInvitedByCode();
 
-            User registeredUser = userService.registerUser(phoneNumber, email, password, invitedByCode);
+            User registeredUser = userService.registerUser(phoneNumber, password, email, invitedByCode);
 
             return ResponseEntity.ok(registeredUser);
         } catch (IllegalArgumentException e) {
@@ -66,14 +72,24 @@ public class UserController {
             String phoneNumber = userDto.get("phoneNumber");
             String password = userDto.get("password");
 
-            USER_TOKEN = userService.loginUser(phoneNumber, password);
+            // Используем обновлённый метод loginUser для аутентификации и генерации токенов
+            Map<String, String> tokens = userService.loginUser(phoneNumber, password);
 
-            Map<String, String> response = new HashMap<>();
-            response.put("token", USER_TOKEN);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(tokens);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@RequestParam Map<String, String> body) {
+        try {
+            String refreshToken = body.get("refreshToken");
+            String newAccessToken = refreshTokenService.refreshAccessToken(refreshToken);
+            return ResponseEntity.ok(Collections.singletonMap("accessToken", newAccessToken));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Невалидный токен");
         }
     }
 
@@ -100,8 +116,10 @@ public class UserController {
     // Ключ для подписи токена из JwtService
     private static final String SECRET_KEY = "5FZsRG9Q2f9UvdxeUR4iU5FV9nFg1Hn9zPb49M8uV7o=";
     @PostMapping("/validate")
-    public ResponseEntity<Boolean> validateToken(@RequestParam(value = "token") String token, @RequestParam(value = "phoneNumber") String phoneNumber) {
+    public ResponseEntity<Boolean> validateToken(@RequestBody Map<String, String> userDetails) {
         try {
+            String token = userDetails.get("token");
+            String phoneNumber = userDetails.get("phoneNumber");
             jwtService.validateToken(token, phoneNumber);
             return ResponseEntity.ok(true); // Если токен валиден
         } catch (Exception e) {

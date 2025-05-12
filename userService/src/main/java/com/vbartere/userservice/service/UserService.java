@@ -5,11 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import com.vbartere.Shared.Kafka.Enum.UserEventType;
 import com.vbartere.Shared.Kafka.Events.UserEvent;
-import com.vbartere.userservice.model.Cart;
-import com.vbartere.userservice.model.Image;
-import com.vbartere.userservice.model.Role;
-import com.vbartere.userservice.model.User;
+import com.vbartere.userservice.model.*;
 import com.vbartere.userservice.repository.CartRepository;
+import com.vbartere.userservice.repository.RefreshTokenRepository;
 import com.vbartere.userservice.repository.RoleRepository;
 import com.vbartere.userservice.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,8 +19,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserService {
@@ -34,11 +35,12 @@ public class UserService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
     public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository,
                        CartRepository cartRepository, KafkaTemplate<String, String> kafkaTemplate,
-                       PasswordEncoder passwordEncoder, ObjectMapper objectMapper) {
+                       PasswordEncoder passwordEncoder, ObjectMapper objectMapper, RefreshTokenRepository refreshTokenRepository) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.roleRepository = roleRepository;
@@ -46,6 +48,7 @@ public class UserService {
         this.kafkaTemplate = kafkaTemplate;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @Transactional(readOnly = true)
@@ -60,11 +63,37 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
-    public String loginUser(String phoneNumber, String password) throws JsonProcessingException {
+    @Transactional
+    public Map<String, String> loginUser(String phoneNumber, String password) throws JsonProcessingException {
         User user = userRepository.findByPhoneNumber(phoneNumber)
                 .filter(u -> u.getPassword().equals(password))
                 .orElseThrow(() -> new IllegalArgumentException("wrong phone number or password"));
+
+//        UserEvent userEvent = new UserEvent(
+//                user.getId(),
+//                user.getName(),
+//                user.getEmail(),
+//                UserEventType.USER_LOGIN
+//        );
+//
+//        kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
+//
+//        // Генерация JWT токена
+//        return jwtService.generateToken(user.getPhoneNumber());
+
+        String accessToken = jwtService.generateToken(phoneNumber);
+        String refreshToken = jwtService.generateRefreshToken(phoneNumber);
+
+        String hashedToken = passwordEncoder.encode(refreshToken);
+
+        refreshTokenRepository.deleteAllByUser(user);
+
+        RefreshToken tokenEntity = new RefreshToken();
+        tokenEntity.setToken(hashedToken);
+        tokenEntity.setExpiryDate(LocalDateTime.now().plusDays(7));
+        tokenEntity.setUser(user);
+
+        refreshTokenRepository.save(tokenEntity);
 
         UserEvent userEvent = new UserEvent(
                 user.getId(),
@@ -72,11 +101,13 @@ public class UserService {
                 user.getEmail(),
                 UserEventType.USER_LOGIN
         );
-
         kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
 
-        // Генерация JWT токена
-        return jwtService.generateToken(user.getPhoneNumber());
+        Map<String, String> response = new HashMap<>();
+        response.put("accessToken", accessToken);
+        response.put("refreshToken", refreshToken);
+
+        return response;
     }
 
     @Transactional
@@ -145,9 +176,11 @@ public class UserService {
                 user.getEmail(),
                 UserEventType.USER_UPDATED
         );
+        userRepository.save(user);
+
         kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
 
-        return userRepository.save(user);
+        return user;
     }
 
     @Transactional

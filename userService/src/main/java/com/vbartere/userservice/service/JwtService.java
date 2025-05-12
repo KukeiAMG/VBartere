@@ -17,17 +17,24 @@ public class JwtService {
 
     public String generateToken(String phoneNumber) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, phoneNumber);
+        return createToken(claims, phoneNumber, 7 * 24 * 60 * 60 * 1000); // 10 часов
     }
-    private String createToken(Map<String, Object> claims, String subject) {
+
+    public String generateRefreshToken(String phoneNumber) {
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, phoneNumber, 7 * 24 * 60 * 60 * 1000); // 7 дней
+    }
+
+    private String createToken(Map<String, Object> claims, String subject, long expirationTime) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))  // 10 часов
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
                 .compact();
     }
+
     public String extractPhoneNumber(String token) {
         return extractClaim(token, Claims::getSubject);
     }

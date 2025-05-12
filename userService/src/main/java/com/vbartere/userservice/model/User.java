@@ -3,7 +3,9 @@ package com.vbartere.userservice.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
+import java.util.List;
 import java.util.Set;
 
 
@@ -19,6 +21,7 @@ public class User {
     private String phoneNumber;
 
     @NotNull
+    @Size(min = 6, message = "Пароль должен быть не менее 6 символов")
     private String password;
 
     private String name;
@@ -30,9 +33,8 @@ public class User {
     @JoinColumn(name = "image_id")
     private Image image;
 
-    @Email
+    @Email(message = "Некорректный email")
     private String email;
-
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -41,6 +43,9 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RefreshToken> refreshTokens;
 
     public User(String phoneNumber, String email, String password, String invitedByCode) {
         this.phoneNumber = phoneNumber;
@@ -123,6 +128,14 @@ public class User {
         this.image = image;
     }
 
+    public List<RefreshToken> getRefreshTokens() {
+        return refreshTokens;
+    }
+
+    public void setRefreshTokens(List<RefreshToken> refreshTokens) {
+        this.refreshTokens = refreshTokens;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -135,6 +148,7 @@ public class User {
                 ", image=" + image +
                 ", email='" + email + '\'' +
                 ", roles=" + roles +
+                ", refreshTokens=" + refreshTokens +
                 '}';
     }
 }
