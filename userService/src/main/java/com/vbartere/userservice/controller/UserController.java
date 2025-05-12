@@ -44,6 +44,27 @@ public class UserController {
         }
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.substring(7);
+
+            Long userId = userService.getUserIdByPhoneNumber(token);
+
+            User user = userService.getById(userId);
+
+            Map<String, String> userInfo = new HashMap<>();
+            userInfo.put("id", String.valueOf(user.getId()));
+            userInfo.put("phoneNumber", user.getPhoneNumber());
+            userInfo.put("email", user.getEmail());
+            userInfo.put("name", user.getName());
+
+            return ResponseEntity.ok(userInfo);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Невалидный или устаревший токен");
+        }
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAll());
