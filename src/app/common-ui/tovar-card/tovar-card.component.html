@@ -1,0 +1,33 @@
+@if (profile){
+
+<div class="tovar-card">
+  <div class="tovar-name">
+    @if (profile.avatarUrl) {
+      <img [src]="profile.avatarUrl | imgUrls" [alt]="profile.surname"class="tovar-card__MainPicture">
+    } @else {
+      <img src="/assets/images/avatar_placeholder.png" [alt]="profile.surname"class="tovar-card__MainPicture">
+    }
+
+    <div class="tovar-card__name">
+      <strong class="h6">{{ profile.phoneNumber }}</strong>
+      <span class="subtitle">{{ profile.name }} {{profile.surname}}</span>
+    </div>
+  </div>
+
+  <div class="tovar-card__description">
+    {{profile.description}}
+  </div>
+
+  <div class="tovar-card__tags">
+    @for(skill of profile.stack; track skill) {
+    <div class="type-tag">{{skill}}</div>
+    }
+  </div>
+
+  <div class="tovar-card__action-btns">
+    <button class="btn">Добавить в корзину</button>
+  </div>
+</div>
+} @else {
+  doldoldol
+}

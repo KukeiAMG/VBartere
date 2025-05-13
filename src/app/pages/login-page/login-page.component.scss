@@ -1,0 +1,36 @@
+:host {
+  display: grid;
+  grid-template-columns: 1fr;
+  z-index: 1; // Контент будет поверх фона
+  height: 100dvh;
+  align-items: center;
+  margin: 0 5%;
+}
+
+.login-container {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 60px;
+}
+
+.password-input{
+  position: relative;
+}
+
+.password-eye{
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 12px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.password-eye.active{
+  color: var(--click-color);
+}

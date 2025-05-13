@@ -1,0 +1,11 @@
+
+<app-animated-background></app-animated-background>
+<div class="content">
+  <div class="tovar-card__wrapper">
+    @for (profile of profiles; track profile.id) {
+      <app-tovar-card
+        [profile]="profile"
+      ></app-tovar-card>
+    }
+  </div>
+</div>

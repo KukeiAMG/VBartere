@@ -1,0 +1,50 @@
+<img src="/assets/images/barterleeinv.png" alt="" width = 86 height = auto class="ml16 ml20" [routerLink]="''">
+
+
+<nav class="mb20">
+  <ul class="main-menu-list">
+
+    <li *ngFor="let menuItem of menuItems">
+      <a class="menu-item" [routerLink]="[menuItem.link]" >
+        <svg [icon]="menuItem.icon"></svg>
+        <span>{{menuItem.label}}</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<p class="medium-text sbnote">Закреплённые товары</p>
+
+
+
+@for (profile of subscribed$ | async; track profile.id){
+  <a [routerLink]="['/profile', profile.id]" class="minisub">
+    <app-subscribed-items  [profile]="profile"></app-subscribed-items>
+  </a>
+}
+
+<div class="mt20 to-subscribed">
+  <a
+  [routerLink]="['/subscribed']"
+  class="to-subscribed-link medium-text"
+  >Все закреплённые товары</a>
+  <svg icon="arrow" class="to-subscribed-icon"></svg>
+</div>
+
+
+
+<footer class="sidebar__footer">
+@if (me(); as me) {
+  @if (me.avatarUrl) {
+  <img [src]="me.avatarUrl | imgUrls" alt="" [routerLink]="['profile/me']">
+  } @else {
+    <img src="/assets/images/avatar_placeholder.png" alt="" [routerLink]="['profile/me']">
+  }
+
+  <div class="medium-text phoneNumber-text" [routerLink]="['profile/me']">{{me.name}} {{me.surname}}</div>
+
+  <a [routerLink]="['settings']" class="settings-btn">
+    <svg icon="settings"></svg>
+  </a>
+}
+</footer>

@@ -1,0 +1,206 @@
+@import "fonts";
+@import "margins";
+
+
+:root {
+  --dark-color: #000000;
+  --light-color: #FFFFFF;
+  --click-color: #6f3ef8;
+  --grey-color: #545454;
+  --dark-hover-color: #161616;
+  --light-transparent-color: rgba(255, 255, 255, 0.75);
+  --click-hover-color: #9570fa;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  height: 100dvh;
+  font-family: 'JetBrainsMono', sans-serif;
+  color: var(--light-color);
+  margin: 0;
+  overflow: hidden;
+}
+
+.background-image {
+  position: fixed;
+  top: -35px;
+  left: -35px;
+  width: calc(125%);
+  height: 125%;
+  background-image: url('/assets/images/SPACE.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(20px) brightness(1);;
+  z-index: -1;
+
+  animation: pulseBrightness 4s infinite ease-in-out;
+}
+
+@keyframes pulseBrightness {
+  0%, 100% {
+    filter: blur(20px) brightness(1);
+  }
+  50% {
+    filter: blur(20px) brightness(1.4);
+  }
+}
+
+
+.content {
+  position: relative;
+  z-index: 1; /* чтобы содержимое было поверх фона */
+  padding: 20px;
+}
+
+.type-tag {
+  padding: 0 8px;
+  border-radius: 4px;
+  border: 1px solid var(--light-color);
+  display: inline;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 24px;
+  height: 24px;
+}
+
+.btn {
+  font-family: 'JetBrainsMono', sans-serif;
+  width: 100%;
+  background: var(--click-color);
+  color: var(--dark-color);
+  padding: 10px 20px;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--dark-color);
+
+  &:hover,
+  &:focus {
+    background: var(--click-hover-color);
+    color: var(--dark-color);
+  }
+}
+
+.btn-shadow{
+  position: relative;
+
+  &:before{
+    content: '';
+    position: absolute;
+    z-index: -1;
+    bottom: -4px;
+    right: -4px;
+    background: var(--grey-color);
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+  }
+}
+
+.h1{
+  font-size: 48px;
+  line-height: 56px;
+  font-weight: 800;
+}
+
+.h4{
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 32px;
+}
+
+.h6 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 800;
+}
+
+.medium-text{
+  font-family: 'JetBrainsMono', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+
+}
+
+.regular {
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.subtitle {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.blee--control-label{
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 16px;
+  display: block;
+}
+
+.blee--input{
+  width: 100%;
+  margin-top: 8px;
+  display:block;
+  border:1px solid var(--light-color);
+  border-radius: 4px;
+  padding: 12px 20px;
+  background-color: var(--dark-color);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 21px;
+  font-family:'JetBrainsMono', sans-serif;
+  color: var(--light-color);
+}
+
+.blee-form-label{
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+}
+
+.blee-form-label__text{
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--light-transparent-color)
+}
+
+.blee-form-input{
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 21px;
+  border: none;
+  background: none;
+  color: var(--light-color);
+  border-bottom: 1px solid var(--light-color);
+  height: 33px;
+  border-radius: 4px 4px 0 0;
+
+  &:focus-visible{
+    outline: 1px solid var(--click-color);
+    border-radius: 4px 4px 0 0;
+  }
+}
+
+.blee-text-area{
+  height: 84px;
+  resize: none;
+}

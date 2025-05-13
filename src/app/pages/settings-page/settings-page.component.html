@@ -1,0 +1,40 @@
+<app-profile-header
+></app-profile-header>
+
+<form class="profile-form__wrapper" [formGroup]="form">
+  <div class="profile-form">
+    <div class="two-columns">
+      <label class="blee-form-label">
+        <span class="blee-form-label__text">Имя</span>
+        <input type="text" class="blee-form-input" formControlName="name">
+      </label>
+      <label class="blee-form-label">
+        <span class="blee-form-label__text">Фамилия</span>
+        <input type="text" class="blee-form-input" formControlName="surname">
+      </label>
+    </div>
+
+    <label class="blee-form-label">
+      <span class="blee-form-label__text">Telegram phoneNumber</span>
+      <input type="text" class="blee-form-input" formControlName="phoneNumber">
+    </label>
+
+    <label class="blee-form-label">
+      <span class="blee-form-label__text">О себе</span>
+      <textarea formControlName="description" class="blee-form-input blee-text-area" rows="4"></textarea>
+    </label>
+
+    <label class="blee-form-label">
+      <span class="blee-form-label__text">Аватар</span>
+      <app-avatar-upload></app-avatar-upload>
+    </label>
+
+
+  </div>
+
+  <div>
+    <div>
+      <button class="btn" (click)=onSave()>Сохранить</button>
+    </div>
+  </div>
+</form>
