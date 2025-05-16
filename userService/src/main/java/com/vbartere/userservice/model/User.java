@@ -36,6 +36,7 @@ public class User {
     private Image image;
 
     @Email(message = "Некорректный email")
+    @Column(unique = true)
     private String email;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -49,6 +50,8 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<RefreshToken> refreshTokens;
+
+    public boolean isBanned;
 
     public User(String phoneNumber, String email, String password, String invitedByCode) {
         this.phoneNumber = phoneNumber;
@@ -137,6 +140,14 @@ public class User {
 
     public void setRefreshTokens(List<RefreshToken> refreshTokens) {
         this.refreshTokens = refreshTokens;
+    }
+
+    public boolean isBanned() {
+        return isBanned;
+    }
+
+    public void setBanned(boolean banned) {
+        isBanned = banned;
     }
 
     @Override

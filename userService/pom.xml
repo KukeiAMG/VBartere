@@ -135,8 +135,7 @@
         <dependency>
             <groupId>com.github.KukeiAMG</groupId>
             <artifactId>SharedKafka</artifactId>
-            <version>-61a7e17521-1</version>
-            <scope>compile</scope>
+            <version>096da488bf</version>
         </dependency>
 
     </dependencies>

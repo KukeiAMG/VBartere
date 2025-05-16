@@ -2,9 +2,12 @@ package com.vbartere.userservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vbartere.Shared.Kafka.DTO.AdminService.AdminUserDTO;
 import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import com.vbartere.Shared.Kafka.Enum.UserEventType;
 import com.vbartere.Shared.Kafka.Events.UserEvent;
+import com.vbartere.userservice.DTO.UserUpdateDTO;
+import com.vbartere.userservice.exceptions.InvalidTokenException;
 import com.vbartere.userservice.model.*;
 import com.vbartere.userservice.repository.CartRepository;
 import com.vbartere.userservice.repository.RefreshTokenRepository;
@@ -20,10 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -69,18 +69,6 @@ public class UserService {
                 .filter(u -> u.getPassword().equals(password))
                 .orElseThrow(() -> new IllegalArgumentException("wrong phone number or password"));
 
-//        UserEvent userEvent = new UserEvent(
-//                user.getId(),
-//                user.getName(),
-//                user.getEmail(),
-//                UserEventType.USER_LOGIN
-//        );
-//
-//        kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
-//
-//        // Генерация JWT токена
-//        return jwtService.generateToken(user.getPhoneNumber());
-
         String accessToken = jwtService.generateToken(phoneNumber);
         String refreshToken = jwtService.generateRefreshToken(phoneNumber);
 
@@ -116,17 +104,24 @@ public class UserService {
             throw new IllegalArgumentException("user already exists");
         }
 
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("this email is busy");
+        }
+
         User user = new User(
                 phoneNumber,
                 email,
                 passwordEncoder.encode(password),
-                invitedByCode);
+                invitedByCode
+        );
+        user.setBanned(false);
 
         Cart cart = new Cart();
-        cart.setUserId(user.getId());
         cart.setAdvertisementList(new ArrayList<>());
 
         userRepository.save(user);
+
+        cart.setUserId(user.getId());
         cartRepository.save(cart);
 
         UserEvent userEvent = new UserEvent(
@@ -136,13 +131,22 @@ public class UserService {
                 UserEventType.USER_CREATED
         );
 
+        AdminUserDTO adminUserDTO = new AdminUserDTO();
+        adminUserDTO.setId(user.getId());
+        adminUserDTO.setPhoneNumber(user.getPhoneNumber());
+        adminUserDTO.setEmail(user.getEmail());
+        adminUserDTO.setInvitedByCode(user.getInvitedByCode());
+        adminUserDTO.setBanned(false);
+        adminUserDTO.setEvent(UserEventType.USER_CREATED);
+
         UserReferralDTO userReferralDTO = new UserReferralDTO(
                 user.getId(),
                 user.getInvitedByCode()
         );
 
         kafkaTemplate.send("user.registration.referral", objectMapper.writeValueAsString(userReferralDTO));
-        kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
+        kafkaTemplate.send("user.event", objectMapper.writeValueAsString(userEvent));
+        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
 
         return user;
     }
@@ -165,10 +169,24 @@ public class UserService {
     }
 
     @Transactional
-    public User updateUserDetails(Long userId, String name, String surname) throws JsonProcessingException {
-        User user = getById(userId);
-        user.setName(name);
-        user.setSurname(surname);
+    public User updateUserDetails(Long id, UserUpdateDTO dto) throws JsonProcessingException {
+
+        User user = getById(id);
+
+        if (dto.getPhoneNumber() != null) user.setPhoneNumber(dto.getPhoneNumber());
+        if (dto.getPassword() != null) user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        if (dto.getName() != null) user.setName(dto.getName());
+        if (dto.getSurname() != null) user.setSurname(dto.getSurname());
+        if (dto.getInvitedByCode() != null) user.setInvitedByCode(dto.getInvitedByCode());
+        if (dto.getEmail() != null) user.setEmail(dto.getEmail());
+        if (dto.getBanned() != null) user.setBanned(dto.getBanned());
+
+        if (dto.getRoleIds() != null) {
+            Set<Role> roles = new HashSet<>(roleRepository.findAllById(dto.getRoleIds()));
+            user.setRoles(roles);
+        }
+
+        userRepository.save(user);
 
         UserEvent userEvent = new UserEvent(
                 user.getId(),
@@ -176,9 +194,19 @@ public class UserService {
                 user.getEmail(),
                 UserEventType.USER_UPDATED
         );
-        userRepository.save(user);
+
+        AdminUserDTO adminUserDTO = new AdminUserDTO();
+        adminUserDTO.setId(user.getId());
+        adminUserDTO.setName(user.getName());
+        adminUserDTO.setSurname(user.getSurname());
+        adminUserDTO.setPhoneNumber(user.getPhoneNumber());
+        adminUserDTO.setEmail(user.getEmail());
+        adminUserDTO.setInvitedByCode(user.getInvitedByCode());
+        adminUserDTO.setBanned(false);
+        adminUserDTO.setEvent(UserEventType.USER_UPDATED);
 
         kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
+        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
 
         return user;
     }
@@ -210,13 +238,24 @@ public class UserService {
     @Transactional(readOnly = true)
     public Long getUserIdByPhoneNumber(String token) {
         User user = userRepository.findByPhoneNumber(jwtService.extractPhoneNumber(token))
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+                .orElseThrow(() -> new InvalidTokenException("Пользователь не найден"));
         return user.getId();
     }
 
     @Transactional(readOnly = true)
     public boolean isPhoneNumberRegistered(String phoneNumber) {
         return userRepository.findByPhoneNumber(phoneNumber).isPresent();
+    }
+
+    @Transactional
+    public void deleteUser(Long id) throws JsonProcessingException {
+        userRepository.deleteById(id);
+
+        AdminUserDTO adminUserDTO = new AdminUserDTO();
+        adminUserDTO.setId(id);
+        adminUserDTO.setEvent(UserEventType.USER_DELETED);
+
+        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
     }
 }
 

@@ -2,6 +2,8 @@ package com.vbartere.userservice.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.vbartere.userservice.DTO.RegisterUserRequest;
+import com.vbartere.userservice.DTO.UserUpdateDTO;
+import com.vbartere.userservice.exceptions.InvalidTokenException;
 import com.vbartere.userservice.model.User;
 import com.vbartere.userservice.service.JwtService;
 import com.vbartere.userservice.service.RefreshTokenService;
@@ -34,6 +36,11 @@ public class UserController {
 
     private String USER_TOKEN;
 
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<?> handleInvalidToken(InvalidTokenException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+    }
+
     @GetMapping("/{id}/get")
     public ResponseEntity<?> getUserById(@PathVariable("id") Long id) {
         try {
@@ -47,6 +54,10 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
         try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new InvalidTokenException("Невалидный формат токена");
+            }
+
             String token = authHeader.substring(7);
 
             Long userId = userService.getUserIdByPhoneNumber(token);
@@ -54,14 +65,38 @@ public class UserController {
             User user = userService.getById(userId);
 
             Map<String, String> userInfo = new HashMap<>();
-            userInfo.put("id", String.valueOf(user.getId()));
             userInfo.put("phoneNumber", user.getPhoneNumber());
-            userInfo.put("email", user.getEmail());
             userInfo.put("name", user.getName());
+            userInfo.put("surname", user.getSurname());
+            userInfo.put("email", user.getEmail());
+            userInfo.put("invitedByCode", user.getInvitedByCode());
 
             return ResponseEntity.ok(userInfo);
+        } catch (InvalidTokenException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Невалидный или устаревший токен");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка сервера");
+        }
+    }
+
+    @DeleteMapping("/delete-my-account")
+    public ResponseEntity<?> deleteCurrentUser(@RequestHeader("Authorization") String authHeader) throws JsonProcessingException {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new InvalidTokenException("Невалидный формат токена");
+            }
+
+            String token = authHeader.substring(7);
+
+            Long userId = userService.getUserIdByPhoneNumber(token);
+
+            userService.deleteUser(userId);
+
+            return ResponseEntity.ok().build();
+        } catch (InvalidTokenException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка сервера");
         }
     }
 
@@ -115,10 +150,9 @@ public class UserController {
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<User> updateUserDetails(@PathVariable Long userId, @RequestBody Map<String, String> userDetails) throws JsonProcessingException {
-        String name = userDetails.get("name");
-        String surname = userDetails.get("surname");
-        User updatedUser = userService.updateUserDetails(userId, name, surname);
+    public ResponseEntity<User> updateUserDetails(@PathVariable Long userId,
+                                                  @RequestBody UserUpdateDTO dto) throws JsonProcessingException {
+        User updatedUser = userService.updateUserDetails(userId, dto);
         return ResponseEntity.ok(updatedUser);
     }
 
