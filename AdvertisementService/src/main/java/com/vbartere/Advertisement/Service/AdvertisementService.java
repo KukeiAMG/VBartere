@@ -4,12 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.Advertisement.kafka.Service.CacheAwaiterService;
 import com.vbartere.Advertisement.kafka.Service.SendCacheService;
-import com.vbartere.Shared.Kafka.DTO.AdvertisementDTO;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Model.Image;
 import com.vbartere.Advertisement.Model.SubCategory;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Repository.SubCategoryRepository;
+import com.vbartere.Shared.Kafka.DTO.Advertisement.AdvertisementDTO;
+import com.vbartere.Shared.Kafka.DTO.Advertisement.ImageDTO;
 import io.lettuce.core.api.sync.RedisCommands;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -18,9 +19,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,52 +48,82 @@ public class AdvertisementService {
         this.sendCacheService = sendCacheService;
     }
 
+    public AdvertisementDTO toDTO(Advertisement advertisement) {
+        AdvertisementDTO dto = new AdvertisementDTO();
+        dto.setId(advertisement.getId());
+        dto.setTitle(advertisement.getTitle());
+        dto.setDescription(advertisement.getDescription());
+        dto.setOwnerId(advertisement.getOwnerId());
+        dto.setBuyersId(advertisement.getBuyersId());
+        dto.setStatus(advertisement.getStatus());
+
+        if (advertisement.getStatus() != null) {
+            dto.setStatus(advertisement.getStatus());
+        } else {
+            dto.setStatus(false); // Значение по умолчанию, если status = null
+        }
+
+        if (advertisement.getSubcategory() != null) {
+            dto.setSubCategoryId(advertisement.getSubcategory().getId());
+        }
+
+        if (advertisement.getImageList() != null && !advertisement.getImageList().isEmpty()) {
+            List<Long> imageIds = new ArrayList<>();
+            for (Image image : advertisement.getImageList()) {
+                imageIds.add(image.getId());
+            }
+            dto.setImagesId(imageIds);
+        } else {
+            dto.setImagesId(Collections.emptyList());
+        }
+
+        return dto;
+    }
+
     public List<Advertisement> getAllAdvertisements() {
         return advertisementRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    public Advertisement getAdvertisementById(Long id) throws JsonProcessingException, ExecutionException, InterruptedException {
+    public AdvertisementDTO getAdvertisementById(Long id) throws JsonProcessingException, ExecutionException, InterruptedException {
 
         String cacheKey = "advertisement:" + id;
         String cacheData = redisCommands.get(cacheKey);
 
         if (cacheData != null) {
-            System.out.println("Объявление " + cacheData + " взято из кэша");
-            return objectMapper.readValue(cacheData, Advertisement.class);
+            System.out.println("Объявление " + id + " взято из кэша");
+            return objectMapper.readValue(cacheData, AdvertisementDTO.class);
         } else {
-
             Advertisement advertisement = advertisementRepository.findById(id)
                     .orElseThrow(() -> new EntityNotFoundException("Объявления нет в БД"));
 
-            AdvertisementDTO advertisementDTO = objectMapper.convertValue(advertisement, AdvertisementDTO.class);
+            AdvertisementDTO advertisementDTO = toDTO(advertisement);
 
-            // Преобразуем сущность в DTO с использованием идентификаторов изображений
-            List<Long> imageIds = advertisement.getImageList().stream()
-                    .map(Image::getId)
-                    .collect(Collectors.toList());
-            advertisementDTO.setImagesId(imageIds);
-
-            if (advertisement.getSubcategory() != null) {
-                advertisementDTO.setSubCategoryId(advertisement.getSubcategory().getId());
-            }
-
+            // Асинхронно отправляем в Kafka, не блокируя поток
             sendCacheService.sendCacheRequest(objectMapper.writeValueAsString(advertisementDTO));
 
-            // Ожидаем появления кэша красиво
-            return cacheAwaiterService.awaitCache(advertisement.getId())
-                    .orTimeout(10, TimeUnit.SECONDS)
-                    .exceptionally(throwable -> {
-                        throw new RuntimeException("Кэш ещё не готов. Попробуйте позже.");
-                    })
-                    .get(); // блокируем поток до получения результата
+            CompletableFuture<Advertisement> future = cacheAwaiterService.awaitCache(advertisement.getId());
+
+            AdvertisementDTO resultDto;
+            try {
+                Advertisement advFromCache = future.get(10, TimeUnit.SECONDS);
+                resultDto = toDTO(advFromCache);
+            } catch (TimeoutException e) {
+                System.err.println("Кэш ещё не готов: " + e.getMessage());
+                resultDto = advertisementDTO; // возвращаем DTO из базы
+            } catch (Exception e) {
+                System.err.println("Ошибка ожидания кэша: " + e.getMessage());
+                resultDto = advertisementDTO;
+            }
+
+            return resultDto;
         }
     }
 
     @Transactional
-    public Advertisement createAdvertisement(AdvertisementDTO advertisementDTO, List<MultipartFile> files, Long userId) throws IOException {
+    public AdvertisementDTO createAdvertisement(AdvertisementDTO advertisementDTO, List<MultipartFile> files, Long userId) throws IOException {
         SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
-                .orElseThrow(() -> new RuntimeException("Подкатегория не найдена"));
+                .orElseThrow(() -> new EntityNotFoundException("Подкатегория не найдена"));
 
         Advertisement advertisement = new Advertisement();
         advertisement.setTitle(advertisementDTO.getTitle());
@@ -99,31 +133,52 @@ public class AdvertisementService {
         advertisement.setOwnerId(userId);
 
         List<Image> images = new ArrayList<>();
-        for(MultipartFile file : files) {
+        for (int i = 0; i < files.size(); i++) {
+            MultipartFile file = files.get(i);
             Image image = imageService.createImage(file);
             image.setAdvertisement(advertisement);
             images.add(image);
         }
 
         if (!images.isEmpty()) {
-            images.getFirst().setPreviewImage(true);
+            images.get(0).setPreviewImage(true);
             advertisement.setImageList(images);
         }
 
-        advertisement.setImageList(images);
+        Advertisement savedAd = advertisementRepository.save(advertisement);
 
-        return advertisementRepository.save(advertisement);
+        AdvertisementDTO responseDTO = new AdvertisementDTO();
+        responseDTO.setId(savedAd.getId());
+        responseDTO.setTitle(savedAd.getTitle());
+        responseDTO.setDescription(savedAd.getDescription());
+        responseDTO.setOwnerId(savedAd.getOwnerId());
+        responseDTO.setBuyersId(savedAd.getBuyersId());
+        responseDTO.setStatus(savedAd.getStatus());
+
+        if (savedAd.getSubcategory() != null) {
+            responseDTO.setSubCategoryId(savedAd.getSubcategory().getId());
+        }
+
+        List<Long> imageIds = new ArrayList<>();
+        List<Image> savedImages = savedAd.getImageList();
+        for (int i = 0; i < savedImages.size(); i++) {
+            imageIds.add(savedImages.get(i).getId());
+        }
+
+        responseDTO.setImagesId(imageIds);
+
+        return responseDTO;
     }
 
     @Transactional
-    public Advertisement updateAdvertisementById(Long advertisementID, AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException, ExecutionException, InterruptedException {
+    public AdvertisementDTO updateAdvertisementById(Long advertisementID, AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException, ExecutionException, InterruptedException {
 
         Advertisement advertisement = advertisementRepository.findById(advertisementID)
-                .orElseThrow(() -> new RuntimeException("Объявление не найдено"));
+                .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
 
         if (advertisementDTO.getSubCategoryId() != null) {
             SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Подкатегория не найдена"));
+                    .orElseThrow(() -> new EntityNotFoundException("Подкатегория не найдена"));
             advertisement.setSubcategory(subCategory);
         }
 
@@ -146,30 +201,30 @@ public class AdvertisementService {
                 image.setAdvertisement(advertisement);
                 images.add(image);
             }
-            images.getFirst().setPreviewImage(true);
+            images.get(0).setPreviewImage(true);
             advertisement.setImageList(images);
         }
 
-        Advertisement savedAdvertisement = advertisementRepository.save(advertisement);
+        Advertisement savedAd = advertisementRepository.save(advertisement);
 
-        sendCacheService.sendCacheRequest(objectMapper.writeValueAsString(savedAdvertisement));
+        AdvertisementDTO dto = toDTO(savedAd);
 
-        // Ожидаем появления кэша красиво
-        return cacheAwaiterService.awaitCache(advertisement.getId())
-                .orTimeout(10, TimeUnit.SECONDS)
-                .exceptionally(throwable -> {
-                    throw new RuntimeException("Кэш ещё не готов. Попробуйте позже.");
-                })
-                .get(); // блокируем поток до получения результата
+        sendCacheService.updateCacheAsync(dto);
+
+        return dto;
     }
 
     @Transactional
     public void deleteAdvertisementById(Long advertisementID) {
-        advertisementRepository.deleteById(advertisementID);
+        if (advertisementRepository.existsById(advertisementID)) {
+            advertisementRepository.deleteById(advertisementID);
 
-        String cacheKey = "advertisement:" + advertisementID;
-        redisCommands.del(cacheKey);
+            String cacheKey = "advertisement:" + advertisementID;
+            redisCommands.del(cacheKey);
 
-        System.out.println("Объявление и его кэш успешно удалены: " + advertisementID);
+            System.out.println("Объявление и его кэш успешно удалены: " + advertisementID);
+        } else {
+            throw new EntityNotFoundException("Изображение не найдено");
+        }
     }
 }

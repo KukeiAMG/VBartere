@@ -33,7 +33,7 @@ public class Advertisement {
     @JsonBackReference
     private SubCategory subcategory;
 
-    @OneToMany(mappedBy = "advertisement", cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE }, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "advertisement", cascade = { CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE }, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<Image> imageList;
 

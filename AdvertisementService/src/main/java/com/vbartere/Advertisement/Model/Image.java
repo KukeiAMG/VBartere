@@ -10,6 +10,45 @@ import java.util.Arrays;
 @Entity
 @Table(name = "image")
 public class Image {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "size")
+    private Long size;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "original_file_name")
+    private String originalFileName;
+
+    @Column(name = "content_type")
+    private String contentType;
+
+    @Column(name = "is_preview_image")
+    private boolean isPreviewImage;
+
+    @Column(name = "file_path")
+    private String filePath; // путь до файла на диске
+
+    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
+    @JoinColumn(name = "advertisement_id")
+    @JsonBackReference
+    private Advertisement advertisement;
+
+    public Image() {}
+
+    public Image(Long size, String name, String originalFileName, String contentType, boolean isPreviewImage, String filePath, Advertisement advertisement) {
+        this.size = size;
+        this.name = name;
+        this.originalFileName = originalFileName;
+        this.contentType = contentType;
+        this.isPreviewImage = isPreviewImage;
+        this.filePath = filePath;
+        this.advertisement = advertisement;
+    }
+
     public Long getId() {
         return id;
     }
@@ -58,12 +97,12 @@ public class Image {
         isPreviewImage = previewImage;
     }
 
-    public byte[] getBytes() {
-        return bytes;
+    public String getFilePath() {
+        return filePath;
     }
 
-    public void setBytes(byte[] bytes) {
-        this.bytes = bytes;
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 
     public Advertisement getAdvertisement() {
@@ -71,45 +110,6 @@ public class Image {
     }
 
     public void setAdvertisement(Advertisement advertisement) {
-        this.advertisement = advertisement;
-    }
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "size")
-    private Long size;
-
-    @Column(name = "name")
-    private String name;
-
-    @Column(name = "originalFileName")
-    private String originalFileName;
-
-    @Column(name = "contentType")
-    private String contentType;
-
-    @Column(name = "isPreviewImage")
-    private boolean isPreviewImage;
-
-    @Column(columnDefinition = "LONGBLOB")
-    private byte[] bytes;
-
-    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
-    @JoinColumn(name = "advertisement_id")
-    @JsonBackReference
-    private Advertisement advertisement;
-
-    public Image() {}
-
-    public Image(Long size, String name, String originalFileName, String contentType, boolean isPreviewImage, byte[] bytes, Advertisement advertisement) {
-        this.size = size;
-        this.name = name;
-        this.originalFileName = originalFileName;
-        this.contentType = contentType;
-        this.isPreviewImage = isPreviewImage;
-        this.bytes = bytes;
         this.advertisement = advertisement;
     }
 
@@ -122,7 +122,7 @@ public class Image {
                 ", originalFileName='" + originalFileName + '\'' +
                 ", contentType='" + contentType + '\'' +
                 ", isPreviewImage=" + isPreviewImage +
-                ", bytes=" + Arrays.toString(bytes) +
+                ", filePath='" + filePath + '\'' +
                 ", advertisement=" + advertisement +
                 '}';
     }

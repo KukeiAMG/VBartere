@@ -27,7 +27,7 @@ public class SubCategory {
     @JsonBackReference
     private Category parentCategory;
 
-    @OneToMany(mappedBy = "subcategory", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @OneToMany(mappedBy = "subcategory", cascade = { CascadeType.PERSIST, CascadeType.MERGE }, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<Advertisement> advertisementList;
 

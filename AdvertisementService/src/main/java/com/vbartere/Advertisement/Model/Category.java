@@ -46,7 +46,7 @@ public class Category {
     @Size(min = 2, max = 20, message = "The minimum allowed number of characters is 2, the maximum is 20")
     private String name;
 
-    @OneToMany(mappedBy = "parentCategory", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @OneToMany(mappedBy = "parentCategory", cascade = { CascadeType.PERSIST, CascadeType.MERGE }, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<SubCategory> subCategoryList;
 

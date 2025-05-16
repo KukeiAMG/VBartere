@@ -1,13 +1,15 @@
 package com.vbartere.Advertisement.Controller;
 
 import com.vbartere.Advertisement.Model.Category;
-import com.vbartere.Advertisement.Model.SubCategory;
 import com.vbartere.Advertisement.Service.CategoryService;
 import com.vbartere.Advertisement.Service.CategorySubCategoryService;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -28,9 +30,14 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Category> getSubCategoryById(@PathVariable("id") Long id) {
-        Category category = categoryService.getCategoryById(id);
-        return ResponseEntity.ok(category);
+    public ResponseEntity<?> getSubCategoryById(@PathVariable("id") Long id) {
+        try {
+            Category category = categoryService.getCategoryById(id);
+            return ResponseEntity.ok(category);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/create")
@@ -47,14 +54,19 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}/delete")
-    public ResponseEntity<SubCategory> deleteCategory(@PathVariable("id") Long id) {
-        categoryService.deleteCategoryById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteCategory(@PathVariable("id") Long id) {
+        try {
+            categoryService.deleteCategoryById(id);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/{categoryId}/subcategories/{subCategoryId}")
-    public ResponseEntity<String> addSubCategoryToCategory(@PathVariable("categoryId") Long categoryId,
-                                                           @PathVariable("subCategoryId") Long subCategoryId) {
+    public ResponseEntity<?> addSubCategoryToCategory(@PathVariable("categoryId") Long categoryId,
+                                                      @PathVariable("subCategoryId") Long subCategoryId) {
         try {
             categorySubCategoryService.addSubCategoryToCategory(categoryId, subCategoryId);
             return ResponseEntity.ok("Подкатегория успешно добавлена к категории");

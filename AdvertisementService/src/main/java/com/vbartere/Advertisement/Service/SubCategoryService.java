@@ -2,8 +2,9 @@ package com.vbartere.Advertisement.Service;
 
 import com.vbartere.Advertisement.Model.SubCategory;
 import com.vbartere.Advertisement.Repository.SubCategoryRepository;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,13 +16,15 @@ public class SubCategoryService {
         this.subCategoryRepository = subCategoryRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<SubCategory> getAllSubCategories() {
         return subCategoryRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public SubCategory getSubCategoryById(Long id) {
         return subCategoryRepository.findById(id).orElseThrow(
-                () -> new RuntimeException("Подкатегория не найдена")
+                () -> new EntityNotFoundException("Подкатегория не найдена")
         );
     }
 
@@ -42,6 +45,10 @@ public class SubCategoryService {
 
     @Transactional
     public void deleteSubCategoryById(Long id) {
-        subCategoryRepository.deleteById(id);
+        if (subCategoryRepository.existsById(id)) {
+            subCategoryRepository.deleteById(id);
+        } else {
+            throw new EntityNotFoundException("Подкатегория не найдена");
+        }
     }
 }

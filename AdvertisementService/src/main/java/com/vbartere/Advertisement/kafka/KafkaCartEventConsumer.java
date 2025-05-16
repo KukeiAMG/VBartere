@@ -6,6 +6,7 @@ import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Service.AdvertisementService;
 import com.vbartere.Advertisement.kafka.Service.SendCacheService;
+import com.vbartere.Shared.Kafka.DTO.Advertisement.AdvertisementDTO;
 import com.vbartere.Shared.Kafka.Events.CartEvent;
 import com.vbartere.Shared.Kafka.Events.CartResult;
 import jakarta.persistence.EntityNotFoundException;
@@ -37,9 +38,9 @@ public class KafkaCartEventConsumer {
     public void handleCartEvent(String message) throws JsonProcessingException {
         CartEvent event = objectMapper.readValue(message, CartEvent.class);
         try {
-            Advertisement cachedAdvertisement = advertisementService.getAdvertisementById(event.getAdvertisementId());
+            AdvertisementDTO cachedAdvertisement = advertisementService.getAdvertisementById(event.getAdvertisementId());
 
-            if (cachedAdvertisement.getStatus()) {
+            if (cachedAdvertisement.isStatus()) {
                 System.out.println("Объявление доступно");
 
                 // Получаем managed-сущность из БД

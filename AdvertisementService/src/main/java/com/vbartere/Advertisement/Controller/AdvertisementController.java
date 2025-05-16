@@ -1,15 +1,18 @@
 package com.vbartere.Advertisement.Controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.vbartere.Shared.Kafka.DTO.AdvertisementDTO;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Service.AdvertisementService;
+import com.vbartere.Shared.Kafka.DTO.Advertisement.AdvertisementDTO;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -28,41 +31,44 @@ public class AdvertisementController {
     }
 
     @GetMapping("/{id}")
-    public Advertisement getAdvertisement(@PathVariable Long id) throws ExecutionException, JsonProcessingException, InterruptedException {
+    public AdvertisementDTO getAdvertisement(@PathVariable Long id) throws ExecutionException, JsonProcessingException, InterruptedException {
         return advertisementService.getAdvertisementById(id);
     }
 
     @PostMapping(value = "/create", consumes = {"multipart/form-data"})
-    public ResponseEntity<Advertisement> createAdvertisement(@RequestPart("advertisement") AdvertisementDTO advertisementDTO,
-                                                             @RequestPart("files") List<MultipartFile> files,
-                                                             @RequestHeader("user-ID") Long userId) {
+    public ResponseEntity<?> createAdvertisement( @RequestPart("advertisement") AdvertisementDTO advertisementDTO,
+                                                  @RequestPart("files") List<MultipartFile> files,
+                                                  @RequestHeader("user-ID") Long userId) {
         try {
-            Advertisement createdAd = advertisementService.createAdvertisement(advertisementDTO, files, userId);
-            return new ResponseEntity<>(createdAd, HttpStatus.CREATED);
+            AdvertisementDTO createdAd = advertisementService.createAdvertisement(advertisementDTO, files, userId);
+            return ResponseEntity.ok(createdAd);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
     @PutMapping(value = "/{id}/update", consumes = {"multipart/form-data"})
-    public ResponseEntity<Advertisement> updateAdvertisement(@PathVariable Long id,
-                                                             @RequestPart("advertisement") AdvertisementDTO advertisementDTO,
-                                                             @RequestPart("files") List<MultipartFile> files) {
+    public ResponseEntity<?> updateAdvertisement(@PathVariable Long id,
+                                                 @RequestPart("advertisement") AdvertisementDTO advertisementDTO,
+                                                 @RequestPart("files") List<MultipartFile> files) {
         try {
-            Advertisement updatedAd = advertisementService.updateAdvertisementById(id, advertisementDTO, files);
+            AdvertisementDTO updatedAd = advertisementService.updateAdvertisementById(id, advertisementDTO, files);
             return ResponseEntity.ok(updatedAd);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
+        } catch (EntityNotFoundException | IOException | ExecutionException | InterruptedException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
     @DeleteMapping("/{id}/delete")
-    public ResponseEntity<Advertisement> deleteAdvertisement(@PathVariable("id") Long id) {
+    public ResponseEntity<?> deleteAdvertisement(@PathVariable("id") Long id) {
         try {
             advertisementService.deleteAdvertisementById(id);
             return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 }
