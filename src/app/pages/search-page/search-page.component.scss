@@ -21,3 +21,23 @@ app-animated-background {
   z-index: -1;
 }
 
+::-webkit-scrollbar {
+  width: 10px; /* Ширина вертикального скроллбара */
+  height: 10px; /* Высота горизонтального */
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Цвет трека */
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  transition: background 0.3s;
+  border-radius: 5px;
+  border: 2px solid #f1f1f1; /* Граница вокруг ползунка */
+  background: linear-gradient(to bottom, var(--click-color), var(--click-hover-color));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555; /* Цвет при наведении */
+}

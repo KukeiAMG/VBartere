@@ -8,17 +8,17 @@ import {Router, RouterLink} from '@angular/router';
 import {SvgIconComponent} from "../../common-ui/svg-icon/svg-icon.component";
 
 @Component({
-  selector: 'app-login-page',
+  selector: 'app-register-page',
   imports: [
     AnimBack2Component,
     ReactiveFormsModule,
     RouterLink,
     SvgIconComponent
   ],
-  templateUrl: './login-page.component.html',
-  styleUrl: './login-page.component.scss'
+  templateUrl: './register-page.component.html',
+  styleUrl: './register-page.component.scss'
 })
-export class LoginPageComponent {
+export class RegisterPageComponent {
 
   authService = inject(AuthService);
   router = inject(Router);
@@ -31,13 +31,13 @@ export class LoginPageComponent {
   });
 
   onSubmit() {
-    if(this.form.valid) {
-      //@ts-ignore
-      this.authService.login(this.form.value)
-        .subscribe(res =>{
-          this.router.navigate(['']);
-        })
-    }
+    // if(this.form.valid) {
+    //   //@ts-ignore
+    //   this.authService.register(this.form.value)
+    //     .subscribe(res =>{
+    //       this.router.navigate(['']);
+    //     })
+    // }
 
   }
 
