@@ -2,12 +2,11 @@ export interface Profile{
   id: number;
   phoneNumber: string;
   avatarUrl: string | null;
-  subscribersAmount: number;
+  email: string | null;
   name: string;
   surname: string | null;
+  invitedByCode?: string | null;
   isActive: boolean;
-  stack: string[];
-  city: string | null;
   description: string | null;
 }
 

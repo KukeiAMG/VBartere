@@ -17,11 +17,11 @@
 
 
 
-@for (profile of subscribed$ | async; track profile.id){
+<!--@for (profile of subscribed$ | async; track profile.id){
   <a [routerLink]="['/profile', profile.id]" class="minisub">
     <app-subscribed-items  [profile]="profile"></app-subscribed-items>
   </a>
-}
+}-->
 
 <div class="mt20 to-subscribed">
   <a

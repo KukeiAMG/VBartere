@@ -1,6 +1,6 @@
 import {inject, Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {catchError, tap, throwError} from 'rxjs';
+import {HttpClient, HttpParams} from '@angular/common/http';
+import {catchError, Observable, tap, throwError} from 'rxjs';
 import {TokenResponse} from './auth.interface';
 import {CookieService} from 'ngx-cookie-service';
 import {Router} from '@angular/router';
@@ -26,6 +26,28 @@ export class AuthService {
     return !! this.token;
   }
 
+  getCurrentUserId(): Observable<number> {
+    // Получаем токен из хранилища
+    const token = this.getAuthToken();
+
+    if (!token) {
+      return throwError(() => new Error('Токен авторизации не найден'));
+    }
+
+    // Создаем параметры запроса
+    const params = new HttpParams().set('token', token);
+
+    return this.http.get<number>(
+      `${this.baseApiUrl}getCurrentUserId`,
+      { params }
+    ).pipe(
+    );
+  }
+
+  private getAuthToken(): string {
+    return this.cookieService.get('token') || '';
+  }
+
   login(payload: {phoneNumber:string,password:string}) {
     const fd = new FormData()
 
@@ -35,6 +57,18 @@ export class AuthService {
     ).pipe(
       tap(val => this.saveTokens(val))
     )
+  }
+
+  register(payload: {
+    phoneNumber: string,
+    password: string,
+    email: string,
+    invitedByCode?: string
+  }) {
+    return this.http.post(
+      `${this.baseApiUrl}register`,
+      payload
+    );
   }
 
   refreshAuthToken(){

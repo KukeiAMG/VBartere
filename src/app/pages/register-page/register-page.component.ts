@@ -6,6 +6,7 @@ import {AuthService} from '../../auth/auth.service';
 import {from, map, take} from 'rxjs';
 import {Router, RouterLink} from '@angular/router';
 import {SvgIconComponent} from "../../common-ui/svg-icon/svg-icon.component";
+import {NgIf} from '@angular/common';
 
 @Component({
   selector: 'app-register-page',
@@ -13,7 +14,8 @@ import {SvgIconComponent} from "../../common-ui/svg-icon/svg-icon.component";
     AnimBack2Component,
     ReactiveFormsModule,
     RouterLink,
-    SvgIconComponent
+    SvgIconComponent,
+    NgIf
   ],
   templateUrl: './register-page.component.html',
   styleUrl: './register-page.component.scss'
@@ -25,20 +27,42 @@ export class RegisterPageComponent {
 
   isPasswordVisible = signal<boolean>(false)
 
+  passwordMismatchError: string | null = null;
+
   form = new FormGroup({
     phoneNumber: new FormControl<string | null>(null, Validators.required),
-    password: new FormControl<string | null>(null, Validators.required)
+    password: new FormControl<string | null>(null, Validators.required),
+    password2: new FormControl<string | null>(null, Validators.required),
+    email: new FormControl<string | null>(null, Validators.required),
+    invitedByCode: new FormControl<string | null>(null)
   });
 
   onSubmit() {
-    // if(this.form.valid) {
-    //   //@ts-ignore
-    //   this.authService.register(this.form.value)
-    //     .subscribe(res =>{
-    //       this.router.navigate(['']);
-    //     })
-    // }
+    this.passwordMismatchError = null; // Сбрасываем ошибку перед проверкой
 
+    if (this.form.valid) {
+      if (this.form.value.password == this.form.value.password2) {
+        const registerData = {
+          phoneNumber: this.form.value.phoneNumber,
+          password: this.form.value.password,
+          email: this.form.value.email,
+          invitedByCode: this.form.value.invitedByCode
+        };
+        //@ts-ignore
+        this.authService.register(registerData)
+          .subscribe({
+            next: (res) => {
+              this.router.navigate(['']);
+            },
+            error: (err) => {
+              // Обработка ошибок от сервера
+              console.error('Ошибка регистрации:', err);
+            }
+          });
+      } else {
+        this.passwordMismatchError = 'Пароли не совпадают';
+      }
+    }
   }
 
 }

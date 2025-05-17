@@ -5,14 +5,31 @@
     [formGroup]="form"
     (ngSubmit)="onSubmit()"
   >
-    <h1 class="h1 mb32">Вход</h1>
+    <h1 class="h1 mb32">Регистрация</h1>
     <label class="blee--control-label mb16">
-      Telegram phoneNumber
+      Номер телефона
       <input
         formControlName="phoneNumber"
         class="blee--input"
         type="text"
         placeholder="Введите логин">
+
+    </label>
+    <label class="blee--control-label mb16">
+      Почта
+    <input
+      formControlName="email"
+      class="blee--input"
+      type="text"
+      placeholder="Введите почту">
+    </label>
+    <label class="blee--control-label mb16">
+      Код приглашения
+      <input
+        formControlName="invitedByCode"
+        class="blee--input"
+        type="text"
+        placeholder="(Опционально) Введите код приглашения">
     </label>
     <label class="blee--control-label mb32">
       Пароль
@@ -23,6 +40,12 @@
           class="blee--input"
           [type]="isPasswordVisible() ? 'text' : 'password'"
           placeholder="Введите пароль"
+        >
+        <input
+          formControlName="password2"
+          class="blee--input"
+          [type]="isPasswordVisible() ? 'text' : 'password'"
+          placeholder="Повторите пароль"
         >
         <button class="password-eye"
                 type="button"
@@ -37,10 +60,14 @@
     </label>
 
 
-    <button class="btn btn-shadow mb20" type="submit">Войти</button>
+    <button class="btn btn-shadow mb20" type="submit">Зарегистрироваться</button>
 
-    <a [routerLink]="['register']" class="btn btn-shadow standard-btn">
-      Регистрация
+    <div *ngIf="passwordMismatchError" class="alert alert-danger">
+      {{ passwordMismatchError }}
+    </div>
+
+    <a [routerLink]="['/login']" class="btn btn-shadow standard-btn">
+      Логин
     </a>
   </form>
   <img src="/assets/images/barterleeinv.png" alt="logo">

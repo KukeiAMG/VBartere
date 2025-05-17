@@ -5,6 +5,7 @@ import {ProfilePageComponent} from './pages/profile-page/profile-page.component'
 import {LayoutComponent} from './common-ui/layout/layout.component';
 import {canActivateAuth} from './auth/access.guard';
 import {SettingsPageComponent} from './pages/settings-page/settings-page.component';
+import {RegisterPageComponent} from './pages/register-page/register-page.component';
 
 
 export const routes: Routes = [
@@ -18,4 +19,5 @@ export const routes: Routes = [
     canActivate: [canActivateAuth]
   },
   {path: 'login', component: LoginPageComponent},
+  {path: 'register', component: RegisterPageComponent},
 ];

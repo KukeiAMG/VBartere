@@ -2,13 +2,15 @@ import {inject, Injectable, signal} from '@angular/core';
 import {HttpClient, HttpHeaders, provideHttpClient} from '@angular/common/http';
 import {Profile} from '../Interfaces/profile.interface';
 import {Pageable} from '../Interfaces/pageable.interface';
-import {catchError, first, map, Observable, of, tap} from 'rxjs';
+import {catchError, first, map, Observable, of, tap, throwError} from 'rxjs';
+import {CookieService} from 'ngx-cookie-service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProfileService {
   http : HttpClient = inject(HttpClient)
+  cookieService = inject(CookieService)
 
   baseApiUrl = `http://localhost:8081/api/users/`
 
@@ -55,12 +57,53 @@ export class ProfileService {
     }
   }
 
-  patchProfile(profile: Partial<Profile>) {
-    console.log(profile);
-    return this.http.patch<Profile>(
-      `${this.baseApiUrl}account/me`,
-      profile
-    ).pipe(first())
+  private sanitizeProfileData(data: Partial<Profile>): Partial<Profile> {
+    const allowedFields: (keyof Profile)[] = [
+      'name',
+      'surname',
+      'email',
+      'phoneNumber',
+      'avatarUrl',
+      // другие разрешенные поля
+    ];
+
+    const result: Partial<Profile> = {};
+
+    for (const key in data) {
+      if (allowedFields.includes(key as keyof Profile) && data[key as keyof Profile] !== undefined) {
+        result[key as keyof Profile] = data[key as keyof Profile] as never;
+      }
+    }
+
+    return result;
+  }
+
+  patchProfile(userId: number, profileData: Partial<Profile>): Observable<Profile> {
+    // Валидация обязательных полей
+    if (!profileData || !userId) {
+      return throwError(() => new Error('ID пользователя и данные профиля обязательны'));
+    }
+
+    // Подготовка заголовков
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${this.getAuthToken()}` // Добавляем токен авторизации
+    });
+
+    return this.http.put<Profile>(
+      `${this.baseApiUrl}${userId}`,
+      profileData,
+      { headers }
+    ).pipe(
+      catchError(error => {
+        console.error('Ошибка при обновлении профиля:', error);
+        return throwError(() => this.handleError(error));
+      })
+    );
+  }
+
+  private getAuthToken(): string {
+    return this.cookieService.get('token') || '';
   }
 
   uploadAvatar(file: File){
@@ -69,6 +112,19 @@ export class ProfileService {
     return this.http.post<Profile>(
       `${this.baseApiUrl}account/upload_image`
       , fd)
+  }
+
+  private handleError(error: any): Error {
+    if (error.status === 401) {
+      return new Error('Требуется авторизация');
+    } else if (error.status === 403) {
+      return new Error('Нет прав для редактирования');
+    } else if (error.status === 404) {
+      return new Error('Пользователь не найден');
+    } else if (error.error?.message) {
+      return new Error(error.error.message);
+    }
+    return new Error('Ошибка при обновлении профиля');
   }
 
 }
