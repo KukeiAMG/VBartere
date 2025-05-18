@@ -1,4 +1,4 @@
-package com.vbartere.AdminService.Config;
+package com.vbartere.AdminService.Kafka.Config;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;

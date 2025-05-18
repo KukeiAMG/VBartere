@@ -30,6 +30,8 @@ public class AdminAdvertisement {
 
     private Boolean status;
 
+    private Boolean banStatus;
+
     public AdminAdvertisement() {}
 
     public AdminAdvertisement(Long id, String title, String description, Long subcategoryId, String subcategoryTitle, List<String> imageUrls, Long ownerId, String ownerUsername, Long buyersId, String buyerUsername, Boolean status) {
@@ -44,6 +46,7 @@ public class AdminAdvertisement {
         this.buyersId = buyersId;
         this.buyerUsername = buyerUsername;
         this.status = status;
+        this.banStatus = false;
     }
 
     public Long getId() {
@@ -132,5 +135,13 @@ public class AdminAdvertisement {
 
     public void setStatus(Boolean status) {
         this.status = status;
+    }
+
+    public Boolean getBanStatus() {
+        return banStatus;
+    }
+
+    public void setBanStatus(Boolean banStatus) {
+        this.banStatus = banStatus;
     }
 }

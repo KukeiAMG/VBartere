@@ -1,4 +1,4 @@
-package com.vbartere.AdminService.Service;
+package com.vbartere.AdminService.Kafka.Service.Consumers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,7 +7,6 @@ import com.vbartere.AdminService.Model.AdminUser;
 import com.vbartere.AdminService.Repository.AdminAdvertisementRepository;
 import com.vbartere.AdminService.Repository.AdminUserRepository;
 import com.vbartere.Shared.Kafka.DTO.AdminService.AdminAdvertisementDTO;
-import com.vbartere.Shared.Kafka.Events.UserEvent;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;

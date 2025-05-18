@@ -1,4 +1,4 @@
-package com.vbartere.AdminService.Service;
+package com.vbartere.AdminService.Kafka.Service.Consumers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

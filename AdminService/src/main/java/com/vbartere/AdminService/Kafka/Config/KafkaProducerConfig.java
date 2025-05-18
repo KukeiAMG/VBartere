@@ -1,6 +1,5 @@
-package com.vbartere.AdminService.Config;
+package com.vbartere.AdminService.Kafka.Config;
 
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.context.annotation.Bean;
@@ -31,8 +30,4 @@ public class KafkaProducerConfig {
         return new KafkaTemplate<>(producerFactory());
     }
 
-    @Bean
-    public NewTopic newTopic() {
-        return new NewTopic("cart-events", 1, (short) 1);
-    }
 }
