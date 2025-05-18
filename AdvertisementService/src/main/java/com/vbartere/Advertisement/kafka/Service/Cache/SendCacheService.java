@@ -1,11 +1,14 @@
-package com.vbartere.Advertisement.kafka.Service;
+package com.vbartere.Advertisement.kafka.Service.Cache;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.Shared.Kafka.DTO.Advertisement.AdvertisementDTO;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class SendCacheService {
@@ -13,16 +16,25 @@ public class SendCacheService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
+    private final String TOPIC = "cache.advertisement";
+
     public SendCacheService(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
     }
 
-    @Async
+    @Async("taskExecutor")
     public void sendCacheRequest(String advertisementId) {
-        System.out.println("Отправка сообщения с ID: " + advertisementId);
-        kafkaTemplate.send("cache-advertisement", advertisementId);
-        System.out.println("Сообщение: " + advertisementId + " отправлено на " + "cache-advertisement");
+        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, advertisementId);
+
+        future.whenComplete((result, ex) -> {
+            if (ex != null) {
+                System.err.println("ошибка при отправке сообщения: " + ex.getMessage());
+            } else {
+                RecordMetadata metadata = result.getRecordMetadata();
+                System.out.printf("сообщение отправлено в " + metadata.topic());
+            }
+        });
     }
 
     public void updateCacheAsync(AdvertisementDTO dto) {

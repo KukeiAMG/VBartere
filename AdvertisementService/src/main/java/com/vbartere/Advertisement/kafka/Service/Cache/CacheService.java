@@ -1,4 +1,4 @@
-package com.vbartere.Advertisement.kafka.Service;
+package com.vbartere.Advertisement.kafka.Service.Cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.kafka.annotation.KafkaListener;
