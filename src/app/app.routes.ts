@@ -6,6 +6,8 @@ import {LayoutComponent} from './common-ui/layout/layout.component';
 import {canActivateAuth} from './auth/access.guard';
 import {SettingsPageComponent} from './pages/settings-page/settings-page.component';
 import {RegisterPageComponent} from './pages/register-page/register-page.component';
+import {CartPageComponent} from './pages/cart-page/cart-page.component';
+import {CreateAdvertisementComponent} from './pages/create-advertisement/create-advertisement.component';
 
 
 export const routes: Routes = [
@@ -15,7 +17,9 @@ export const routes: Routes = [
       {path: 'profile', component: ProfilePageComponent},
       {path: 'profile/:id', component: ProfilePageComponent},
       {path: 'settings', component: SettingsPageComponent},
-  ],
+      {path: 'cart', component: CartPageComponent},
+      {path: 'create-advertisement', component: CreateAdvertisementComponent},
+    ],
     canActivate: [canActivateAuth]
   },
   {path: 'login', component: LoginPageComponent},

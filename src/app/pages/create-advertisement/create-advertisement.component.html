@@ -1,0 +1,85 @@
+<div class="create-advertisement-container">
+  <h1>Создать новое объявление</h1>
+
+  <div class="form-container">
+    <div class="form-group">
+      <label for="title">Название товара *</label>
+      <input 
+        type="text" 
+        id="title" 
+        [(ngModel)]="advertisementData.title"
+        placeholder="Введите название товара"
+        [class.error]="errorMessage && !advertisementData.title"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="description">Описание *</label>
+      <textarea 
+        id="description" 
+        [(ngModel)]="advertisementData.description"
+        placeholder="Опишите ваш товар"
+        [class.error]="errorMessage && !advertisementData.description"
+      ></textarea>
+    </div>
+
+    <!-- <div class="form-group">
+      <label for="price">Цена *</label>
+      <input 
+        type="number" 
+        id="price" 
+        [(ngModel)]="advertisementData.price"
+        placeholder="Укажите цену"
+        [class.error]="errorMessage && !advertisementData.price"
+      >
+    </div> -->
+
+    <div class="form-group">
+      <label for="category">Категория</label>
+      <input 
+        type="text" 
+        id="category" 
+        [(ngModel)]="advertisementData.subCategoryId"
+        placeholder="Укажите айди категорию"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="files">Фотографии *</label>
+      <div class="file-upload-container">
+        <input 
+          type="file" 
+          id="files" 
+          multiple 
+          accept="image/*" 
+          (change)="onFileSelected($event)"
+          [class.error]="errorMessage && selectedFiles.length === 0"
+        >
+        <div class="file-upload-label">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <span>Выберите фотографии</span>
+        </div>
+      </div>
+
+      <div class="preview-container" *ngIf="previewUrls.length > 0">
+        <div class="preview-item" *ngFor="let url of previewUrls; let i = index">
+          <img [src]="url" alt="Preview">
+          <button class="remove-btn" (click)="removeImage(i)">×</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="error-message" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+
+    <div class="form-actions">
+      <button 
+        class="btn btn-shadow" 
+        (click)="createAdvertisement()"
+      >
+        <span>Создать объявление</span>
+      </button>
+    </div>
+  </div>
+</div> 

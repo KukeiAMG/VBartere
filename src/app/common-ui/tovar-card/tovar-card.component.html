@@ -1,27 +1,27 @@
-@if (profile){
+@if (advertisement){
 
 <div class="tovar-card">
   <div class="tovar-name">
-    @if (profile.avatarUrl) {
-      <img [src]="profile.avatarUrl | imgUrls" [alt]="profile.surname"class="tovar-card__MainPicture">
+    @if (advertisement.imageList && advertisement.imageList.length) {
+      <img [src]="advertisement.imageList[0] | imgUrls" [alt]="advertisement.title" class="tovar-card__MainPicture">
     } @else {
-      <img src="/assets/images/avatar_placeholder.png" [alt]="profile.surname"class="tovar-card__MainPicture">
+      <img src="/assets/images/avatar_placeholder.png" [alt]="advertisement.title" class="tovar-card__MainPicture">
     }
 
     <div class="tovar-card__name">
-      <strong class="h6">{{ profile.phoneNumber }}</strong>
-      <span class="subtitle">{{ profile.name }} {{profile.surname}}</span>
+      <strong class="h6">{{ advertisement.title }}</strong>
+      <span class="subtitle">{{advertisement.title}}</span>
     </div>
   </div>
 
   <div class="tovar-card__description">
-    {{profile.description}}
+    {{advertisement.description}}
   </div>
 
   <div class="tovar-card__tags">
-    @for(skill of profile.stack; track skill) {
+<!--    @for(skill of advertisement.stack; track skill) {
     <div class="type-tag">{{skill}}</div>
-    }
+    }-->
   </div>
 
   <div class="tovar-card__action-btns">

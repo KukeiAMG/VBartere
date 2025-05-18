@@ -4,6 +4,8 @@ import {ProfileService} from '../../data/services/profile.service';
 import {Profile} from '../../data/Interfaces/profile.interface';
 import {AnimatedBackgroundComponent} from '../../my-shenanigans/animated-background/animated-background.component';
 import {RouterOutlet} from '@angular/router';
+import { AdvertisementService } from '../../data/services/advertisement.service';
+import { Advertisement } from '../../data/Interfaces/advertisement.interface';
 
 @Component({
   selector: 'app-search-page',
@@ -17,13 +19,13 @@ import {RouterOutlet} from '@angular/router';
   styleUrl: './search-page.component.scss'
 })
 export class SearchPageComponent {
-  profileService = inject(ProfileService)
-  profiles : Profile[] = []
+  advertisementService = inject(AdvertisementService)
+  advertisements : Advertisement[] = []
 
   constructor(){
-    this.profileService.getTestAccounts()
+    this.advertisementService.getAllAdvertisements()
       .subscribe(val => {
-        this.profiles = val
+        this.advertisements = val
       })
   }
 }

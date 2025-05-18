@@ -20,28 +20,38 @@
   padding: 0;
 }
 
+html {
+  height: 100%;
+  overflow: hidden;
+  scroll-behavior: smooth;
+}
+
 body {
-  height: 100dvh;
+  min-height: 100vh;
+  height: 100%;
   font-family: 'JetBrainsMono', sans-serif;
   color: var(--light-color);
   margin: 0;
   overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .background-image {
   position: fixed;
-  top: -35px;
-  left: -35px;
-  width: calc(125%);
-  height: 125%;
+  top: -5%;
+  left: -5%;
+  width: 110vw;
+  height: 110vh;
   background-image: url('/assets/images/SPACE.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(20px) brightness(1);;
+  filter: blur(20px) brightness(1);
   z-index: -1;
-
   animation: pulseBrightness 4s infinite ease-in-out;
+  transform: translateZ(0);
 }
 
 @keyframes pulseBrightness {
@@ -56,8 +66,37 @@ body {
 
 .content {
   position: relative;
-  z-index: 1; /* чтобы содержимое было поверх фона */
+  z-index: 1;
   padding: 20px;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Стили для скроллбара */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  transition: background 0.3s;
+  border-radius: 5px;
+  border: 2px solid #f1f1f1;
+  background: linear-gradient(to bottom, var(--click-color), var(--click-hover-color));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .type-tag {

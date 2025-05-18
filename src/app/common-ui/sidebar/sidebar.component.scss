@@ -1,8 +1,9 @@
 :host{
   display: block;
+  width: 240px;
   padding: 20px 12px;
   position: relative;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 .main-menu-list{
@@ -51,7 +52,7 @@
 .sidebar__footer{
   position: absolute;
   width: calc(100% - 2px);
-  bottom: calc( 20px + 48px );  //48 padding добавил
+  bottom: calc( 20px + 72px );  //48 padding добавил
   background: rgba( 192, 192, 192, 0.1 );
   border-radius: 2px;
   padding: 4px 16px;

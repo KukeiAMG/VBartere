@@ -1,11 +1,12 @@
-
+<div class="main-wrapper">
 <app-animated-background></app-animated-background>
 <div class="content">
   <div class="tovar-card__wrapper">
-    @for (profile of profiles; track profile.id) {
+    @for (advertisement of advertisements; track advertisement.id) {
       <app-tovar-card
-        [profile]="profile"
+        [advertisement]="advertisement"
       ></app-tovar-card>
     }
   </div>
+</div>
 </div>

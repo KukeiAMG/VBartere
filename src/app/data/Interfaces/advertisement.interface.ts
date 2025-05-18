@@ -3,9 +3,15 @@ export interface Advertisement {
   title: string;
   description: string | null;
   imageList: string[] | null;
-  subcategory: number | null;
+  subCategoryId: number | null;
   ownerId: number | null;
-  buyersId: number | null;
   status: boolean | null;
 }
-
+export interface AdvertisementDTO {
+  title: string;
+  description: string;
+  subCategoryId: number;
+  ownerId: number;
+  status: boolean;
+  // Добавьте остальные необходимые поля
+}
