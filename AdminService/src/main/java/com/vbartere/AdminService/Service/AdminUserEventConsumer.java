@@ -14,19 +14,21 @@ import java.util.Optional;
 public class AdminUserEventConsumer {
 
     private final AdminUserRepository adminUserRepository;
+    private final ObjectMapper objectMapper;
 
-    public AdminUserEventConsumer(AdminUserRepository adminUserRepository) {
+    public AdminUserEventConsumer(AdminUserRepository adminUserRepository, ObjectMapper objectMapper) {
         this.adminUserRepository = adminUserRepository;
+        this.objectMapper = objectMapper;
     }
 
     @KafkaListener(topics = "administration.user.event")
     public void handleUserEvent(String message) throws JsonProcessingException {
         System.out.println(message);
 
-        AdminUserDTO event = new ObjectMapper().readValue(message, AdminUserDTO.class);
+        AdminUserDTO event = objectMapper.readValue(message, AdminUserDTO.class);
 
-        switch (event.getEvent().toString()) {
-            case "USER_CREATED", "USER_UPDATED" -> {
+        switch (event.getEvent()) {
+            case USER_CREATED, USER_UPDATED -> {
                 Optional<AdminUser> optionalUser = adminUserRepository.findById(event.getId());
                 AdminUser adminUser;
 
@@ -50,7 +52,7 @@ public class AdminUserEventConsumer {
 
                 System.out.println(adminUser);
             }
-            case "USER_DELETED" -> { adminUserRepository.deleteById(event.getId()); }
+            case USER_DELETED -> { adminUserRepository.deleteById(event.getId()); }
         }
     }
 }

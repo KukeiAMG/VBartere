@@ -2,27 +2,74 @@ package com.vbartere.AdminService.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vbartere.AdminService.Model.AdminAdvertisement;
 import com.vbartere.AdminService.Model.AdminUser;
 import com.vbartere.AdminService.Repository.AdminAdvertisementRepository;
+import com.vbartere.AdminService.Repository.AdminUserRepository;
+import com.vbartere.Shared.Kafka.DTO.AdminService.AdminAdvertisementDTO;
 import com.vbartere.Shared.Kafka.Events.UserEvent;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class AdminAdvertisementEventConsumer {
 
     private final AdminAdvertisementRepository adminAdvertisementRepository;
+    private final AdminUserRepository adminUserRepository;
+    private final ObjectMapper objectMapper;
 
-    public AdminAdvertisementEventConsumer(AdminAdvertisementRepository adminAdvertisementRepository) {
+    public AdminAdvertisementEventConsumer(AdminAdvertisementRepository adminAdvertisementRepository, AdminUserRepository adminUserRepository, ObjectMapper objectMapper) {
         this.adminAdvertisementRepository = adminAdvertisementRepository;
+        this.adminUserRepository = adminUserRepository;
+        this.objectMapper = objectMapper;
     }
 
-    @KafkaListener(topics = "advertisement-event")
-    public void handleUserEvent(String message) throws JsonProcessingException {
-        UserEvent event = new ObjectMapper().readValue(message, UserEvent.class);
+    @KafkaListener(topics = "administration.advertisement.event")
+    public void handleAdvertisementEvent(String message) throws JsonProcessingException {
+        AdminAdvertisementDTO event = objectMapper.readValue(message, AdminAdvertisementDTO.class);
 
-        switch (event.getEvent().toString()) {
-            // TODO сделать обработку событий у объявлений и тут создавать их копии для админки
+        switch (event.getEventType()) {
+            case ADVERTISEMENT_CREATED, ADVERTISEMENT_UPDATED -> {
+                Optional<AdminAdvertisement> optionalAdvertisement = adminAdvertisementRepository.findById(event.getId());
+
+                AdminAdvertisement adminAdvertisement = optionalAdvertisement.orElseGet(() -> {
+                    AdminAdvertisement newAdvertisement = new AdminAdvertisement();
+                    newAdvertisement.setId(event.getId());
+                    return newAdvertisement;
+                });
+
+                AdminUser owner = adminUserRepository.findById(event.getOwnerId())
+                        .orElseThrow(() -> new EntityNotFoundException("Владелец не найден"));
+
+                adminAdvertisement.setTitle(event.getTitle());
+                adminAdvertisement.setDescription(event.getDescription());
+                adminAdvertisement.setSubcategoryId(event.getSubcategoryId());
+                adminAdvertisement.setSubcategoryTitle(event.getSubcategoryTitle());
+                adminAdvertisement.setOwnerId(event.getOwnerId());
+                adminAdvertisement.setOwnerUsername(owner.getName());
+                adminAdvertisement.setStatus(event.getStatus());
+
+                if (event.getBuyersId() != null) {
+                    adminAdvertisement.setBuyersId(event.getBuyersId());
+
+                    AdminUser buyer = adminUserRepository.findById(event.getBuyersId())
+                            .orElseThrow(() -> new EntityNotFoundException("Покупатель не найден"));
+
+                    adminAdvertisement.setBuyerUsername(buyer.getName());
+                } else {
+                    adminAdvertisement.setBuyersId(null);
+                    adminAdvertisement.setBuyerUsername(null);
+                }
+
+                adminAdvertisementRepository.save(adminAdvertisement);
+            }
+
+            case ADVERTISEMENT_DELETED -> {
+                adminAdvertisementRepository.deleteById(event.getId());
+            }
         }
     }
 }
