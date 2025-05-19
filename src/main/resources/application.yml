@@ -1,0 +1,107 @@
+spring:
+  application:
+    name: ChatService
+  
+  datasource:
+    # Настройки базы данных
+    url: jdbc:postgresql://localhost:5432/chat_db
+    # Имя пользователя
+    username: chat_user
+    # Пароль пользователя
+    password: chat_password
+    # Класс драйвера базы данных
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      # Автоматическое обновление схемы базы данных
+      ddl-auto: update
+      # Вывод SQL-запросов в консоль
+      show-sql: true
+      properties:
+        hibernate:
+          # Форматирование SQL-запросов
+          format_sql: true
+
+  # WebSocket настройки
+  websocket:
+    allowed-origin-patterns: "*"
+    endpoint: /ws-chat
+    destination-prefixes: /app
+    broker-prefixes: /topic
+
+  kafka:
+    # Общие настройки
+    bootstrap-servers: localhost:9093
+    
+    # Настройки Producer
+    producer:
+      # Базовые настройки
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      
+      # Настройки надежности
+      acks: all
+      retries: 3
+      retry-backoff-ms: 1000
+      enable-idempotence: true
+      
+      # Настройки производительности
+      batch-size: 16384
+      linger-ms: 100
+      buffer-memory: 33554432
+      compression-type: snappy
+      max-request-size: 1048576
+      
+    # Настройки Consumer
+    consumer:
+      # Базовые настройки
+      group-id: chat-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      
+      # Настройки чтения
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 100
+      
+      # Настройки производительности
+      fetch-min-bytes: 1024
+      fetch-max-bytes: 52428800
+      max-partition-fetch-bytes: 1048576
+      
+      # Таймауты
+      session-timeout-ms: 30000
+      heartbeat-interval-ms: 3000
+      max-poll-interval-ms: 300000
+      
+      properties:
+        spring.json.trusted.packages: "com.example.common.dto"
+
+server:
+  port: 8081
+
+jwt:
+  # Настройки JWT токенов
+  # Используется для валидации токенов доступа от пользователей
+  # JWT_SECRET должен быть задан через переменную окружения в production
+  # Значение по умолчанию используется только для разработки
+  # 
+  # Формат токена:
+  # Header: {
+  #   "alg": "HS256", 
+  #   "typ": "JWT"
+  # }
+  # Payload: {
+  #   "sub": "<user_id>",
+  #   "roles": ["USER"],
+  #   "iat": 1516239022,
+  #   "exp": 1516242622
+  # }
+  #
+  # Пример использования:
+  # curl -H "Authorization: Bearer <token>" http://localhost:8081/api/v1/chat/rooms
+  #
+  # Для генерации нового секрета:
+  # openssl rand -base64 32
+  secret: ${JWT_SECRET:c2VjcmV0X2tleV9mb3JfY2hhdF9zZXJ2aWNlX2p3dF90b2tlbl9zaWduaW5nXzI1Nl9iaXRz} 
