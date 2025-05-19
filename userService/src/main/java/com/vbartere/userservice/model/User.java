@@ -1,5 +1,6 @@
 package com.vbartere.userservice.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -52,6 +53,10 @@ public class User {
     private List<RefreshToken> refreshTokens;
 
     public boolean isBanned;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonBackReference
+    private Cart cart;
 
     public User(String phoneNumber, String email, String password, String invitedByCode) {
         this.phoneNumber = phoneNumber;
@@ -148,6 +153,14 @@ public class User {
 
     public void setBanned(boolean banned) {
         isBanned = banned;
+    }
+
+    public Cart getCart() {
+        return cart;
+    }
+
+    public void setCart(Cart cart) {
+        this.cart = cart;
     }
 
     @Override

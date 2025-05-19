@@ -1,9 +1,15 @@
 package com.vbartere.userservice.service;
+import com.vbartere.userservice.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
@@ -13,16 +19,37 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private String SECRET_KEY = "5FZsRG9Q2f9UvdxeUR4iU5FV9nFg1Hn9zPb49M8uV7o=";
+    @Value("${jwt.secret}")
+    private String SECRET_KEY;
 
-    public String generateToken(String phoneNumber) {
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, phoneNumber, 7 * 24 * 60 * 60 * 1000); // 10 часов
+//    public String generateToken(String phoneNumber) {
+//        Map<String, Object> claims = new HashMap<>();
+//        return createToken(claims, phoneNumber, 7 * 24 * 60 * 60 * 1000); // 10 часов
+//    }
+//
+//    public String generateRefreshToken(String phoneNumber) {
+//        Map<String, Object> claims = new HashMap<>();
+//        return createToken(claims, phoneNumber, 7 * 24 * 60 * 60 * 1000); // 7 дней
+//    }
+
+    private Key getSigningKey() {
+        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateRefreshToken(String phoneNumber) {
+    public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, phoneNumber, 7 * 24 * 60 * 60 * 1000); // 7 дней
+        claims.put("id", user.getId());
+        claims.put("phoneNumber", user.getPhoneNumber());
+        claims.put("roles", user.getRoles()); // например: ["ROLE_USER", "ROLE_ADMIN"]
+        return createToken(claims, user.getPhoneNumber(), 10 * 60 * 60 * 1000); // 10 часов
+    }
+
+    public String generateRefreshToken(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("id", user.getId());
+        claims.put("phoneNumber", user.getPhoneNumber());
+        claims.put("roles", user.getRoles());
+        return createToken(claims, user.getPhoneNumber(), 7 * 24 * 60 * 60 * 1000); // 7 дней
     }
 
     private String createToken(Map<String, Object> claims, String subject, long expirationTime) {
@@ -31,9 +58,10 @@ public class JwtService {
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // <-- используем ключ Key, а не строку
                 .compact();
     }
+
 
     public String extractPhoneNumber(String token) {
         return extractClaim(token, Claims::getSubject);

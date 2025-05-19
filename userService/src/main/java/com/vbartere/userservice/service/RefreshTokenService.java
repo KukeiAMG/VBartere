@@ -43,6 +43,6 @@ public class RefreshTokenService {
             throw new IllegalArgumentException("Обновленный токен устарел");
         }
 
-        return jwtService.generateToken(phoneNumber);
+        return jwtService.generateToken(user);
     }
 }

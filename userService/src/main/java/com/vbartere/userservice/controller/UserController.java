@@ -60,7 +60,7 @@ public class UserController {
 
             String token = authHeader.substring(7);
 
-            Long userId = userService.getUserIdByPhoneNumber(token);
+            Long userId = userService.getUserIdByToken(token);
 
             User user = userService.getById(userId);
 
@@ -88,7 +88,7 @@ public class UserController {
 
             String token = authHeader.substring(7);
 
-            Long userId = userService.getUserIdByPhoneNumber(token);
+            Long userId = userService.getUserIdByToken(token);
 
             userService.deleteUser(userId);
 
@@ -168,31 +168,29 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    // Ключ для подписи токена из JwtService
-    private static final String SECRET_KEY = "5FZsRG9Q2f9UvdxeUR4iU5FV9nFg1Hn9zPb49M8uV7o=";
-    @PostMapping("/validate")
-    public ResponseEntity<Boolean> validateToken(@RequestBody Map<String, String> userDetails) {
-        try {
-            String token = userDetails.get("token");
-            String phoneNumber = userDetails.get("phoneNumber");
-            jwtService.validateToken(token, phoneNumber);
-            return ResponseEntity.ok(true); // Если токен валиден
-        } catch (Exception e) {
-            System.out.println("Token validation error: " + e.getMessage());
-            return ResponseEntity.ok(false); // Если токен не валиден
-        }
-    }
-
-    @GetMapping("/getCurrentUserId")
-    public ResponseEntity<?> getUserId(@RequestParam(value = "token") String token) {
-        try {
-            Long userId = userService.getUserIdByPhoneNumber(token);
-            return ResponseEntity.ok(userId); // Если токен валиден
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
+//    @PostMapping("/validate")
+//    public ResponseEntity<Boolean> validateToken(@RequestBody Map<String, String> userDetails) {
+//        try {
+//            String token = userDetails.get("token");
+//            String phoneNumber = userDetails.get("phoneNumber");
+//            jwtService.validateToken(token, phoneNumber);
+//            return ResponseEntity.ok(true); // Если токен валиден
+//        } catch (Exception e) {
+//            System.out.println("Token validation error: " + e.getMessage());
+//            return ResponseEntity.ok(false); // Если токен не валиден
+//        }
+//    }
+//
+//    @GetMapping("/getCurrentUserId")
+//    public ResponseEntity<?> getUserId(@RequestParam(value = "token") String token) {
+//        try {
+//            Long userId = userService.getUserIdByToken(token);
+//            return ResponseEntity.ok(userId); // Если токен валиден
+//        } catch (RuntimeException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                    .body(Map.of("error", e.getMessage()));
+//        }
+//    }
 }
 
 

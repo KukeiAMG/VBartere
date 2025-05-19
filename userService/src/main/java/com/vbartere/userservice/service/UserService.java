@@ -7,6 +7,9 @@ import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import com.vbartere.Shared.Kafka.Enum.UserEventType;
 import com.vbartere.Shared.Kafka.Events.UserEvent;
 import com.vbartere.userservice.DTO.UserUpdateDTO;
+import com.vbartere.userservice.Kafka.Producers.SendAdminRequest;
+import com.vbartere.userservice.Kafka.Producers.SendNotificationRequest;
+import com.vbartere.userservice.Kafka.Producers.SendReferralRequest;
 import com.vbartere.userservice.exceptions.InvalidTokenException;
 import com.vbartere.userservice.model.*;
 import com.vbartere.userservice.repository.CartRepository;
@@ -16,6 +19,7 @@ import com.vbartere.userservice.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,10 +41,14 @@ public class UserService {
     private final ObjectMapper objectMapper;
     private final RefreshTokenRepository refreshTokenRepository;
 
+    private final SendAdminRequest sendAdminRequest;
+    private final SendNotificationRequest sendNotificationRequest;
+    private final SendReferralRequest sendReferralRequest;
+
     @Autowired
     public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository,
                        CartRepository cartRepository, KafkaTemplate<String, String> kafkaTemplate,
-                       PasswordEncoder passwordEncoder, ObjectMapper objectMapper, RefreshTokenRepository refreshTokenRepository) {
+                       PasswordEncoder passwordEncoder, ObjectMapper objectMapper, RefreshTokenRepository refreshTokenRepository, SendAdminRequest sendAdminRequest, SendNotificationRequest sendNotificationRequest, SendReferralRequest sendReferralRequest) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.roleRepository = roleRepository;
@@ -49,6 +57,9 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.sendAdminRequest = sendAdminRequest;
+        this.sendNotificationRequest = sendNotificationRequest;
+        this.sendReferralRequest = sendReferralRequest;
     }
 
     @Transactional(readOnly = true)
@@ -69,10 +80,14 @@ public class UserService {
                 .filter(u -> u.getPassword().equals(password))
                 .orElseThrow(() -> new IllegalArgumentException("wrong phone number or password"));
 
-        String accessToken = jwtService.generateToken(phoneNumber);
-        String refreshToken = jwtService.generateRefreshToken(phoneNumber);
+//        String accessToken = jwtService.generateToken(phoneNumber);
+//        String refreshToken = jwtService.generateRefreshToken(phoneNumber);
 
-        String hashedToken = passwordEncoder.encode(refreshToken);
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+         String hashedToken = passwordEncoder.encode(refreshToken);
+        //String hashedToken = passwordEncoder.matches(password, refreshToken);
 
         refreshTokenRepository.deleteAllByUser(user);
 
@@ -89,7 +104,7 @@ public class UserService {
                 user.getEmail(),
                 UserEventType.USER_LOGIN
         );
-        kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
+        kafkaTemplate.send("user.event", objectMapper.writeValueAsString(userEvent));
 
         Map<String, String> response = new HashMap<>();
         response.put("accessToken", accessToken);
@@ -116,12 +131,15 @@ public class UserService {
         );
         user.setBanned(false);
 
+        Role userRole = roleRepository.findByName("ROLE_USER");
+        user.setRoles(new HashSet<>(Collections.singleton(userRole)));
+
         Cart cart = new Cart();
         cart.setAdvertisementList(new ArrayList<>());
 
         userRepository.save(user);
 
-        cart.setUserId(user.getId());
+        cart.setUser(user);
         cartRepository.save(cart);
 
         UserEvent userEvent = new UserEvent(
@@ -144,9 +162,13 @@ public class UserService {
                 user.getInvitedByCode()
         );
 
-        kafkaTemplate.send("user.registration.referral", objectMapper.writeValueAsString(userReferralDTO));
-        kafkaTemplate.send("user.event", objectMapper.writeValueAsString(userEvent));
-        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
+//        kafkaTemplate.send("user.registration.referral", objectMapper.writeValueAsString(userReferralDTO));
+//        kafkaTemplate.send("notification.user.event", objectMapper.writeValueAsString(userEvent));
+//        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
+
+        sendReferralRequest.sendReferralRequest(objectMapper.writeValueAsString(userReferralDTO));
+        sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+        sendAdminRequest.sendAdminRequest(objectMapper.writeValueAsString(adminUserDTO));
 
         return user;
     }
@@ -165,6 +187,18 @@ public class UserService {
         }
 
         user.getRoles().add(role);
+
+        UserEvent userEvent = new UserEvent();
+        userEvent.setId(userId);
+        userEvent.setName(user.getName());
+        userEvent.setEmail(user.getEmail());
+        userEvent.setEvent(UserEventType.USER_UPDATED);
+        userEvent.setDescription(
+                "Вам назначена новая роль: " + role.getName()
+        );
+
+        sendNotificationRequest.updateNotificationAsync(userEvent);
+
         return userRepository.save(user);
     }
 
@@ -205,8 +239,10 @@ public class UserService {
         adminUserDTO.setBanned(false);
         adminUserDTO.setEvent(UserEventType.USER_UPDATED);
 
-        kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
-        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
+//        kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
+//        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
+        sendNotificationRequest.updateNotificationAsync(userEvent);
+        sendAdminRequest.updateAdminAsync(adminUserDTO);
 
         return user;
     }
@@ -236,7 +272,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Long getUserIdByPhoneNumber(String token) {
+    public Long getUserIdByToken(String token) {
         User user = userRepository.findByPhoneNumber(jwtService.extractPhoneNumber(token))
                 .orElseThrow(() -> new InvalidTokenException("Пользователь не найден"));
         return user.getId();

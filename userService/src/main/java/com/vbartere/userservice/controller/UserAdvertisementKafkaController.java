@@ -30,7 +30,7 @@ public class UserAdvertisementKafkaController {
                                                          @RequestHeader(name = "Authorization") String jwtToken) {
         try {
             String token = jwtToken.startsWith("Bearer ") ? jwtToken.substring(7) : jwtToken;
-            Long userId = userService.getUserIdByPhoneNumber(token);
+            Long userId = userService.getUserIdByToken(token);
             //cartService.addProductToCart(userId, advertisementId);
 
             System.out.println("Controller userId = " + userId);

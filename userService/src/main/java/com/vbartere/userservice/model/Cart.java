@@ -15,16 +15,17 @@ public class Cart {
     @CollectionTable(name = "cart_advertisement_list", joinColumns = @JoinColumn(name = "cart_id"))
     @Column(name = "advertisement_id")
     List<Long> advertisementList;
-    @Column(name = "user_id")
-    private Long userId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    private User user;
 
     public Cart() {
 
     }
 
-    public Cart(List<Long> advertisementList, Long userId) {
+    public Cart(List<Long> advertisementList, User user) {
         this.advertisementList = advertisementList;
-        this.userId = userId;
+        this.user = user;
     }
 
     public Long getId() {
@@ -43,12 +44,12 @@ public class Cart {
         this.advertisementList = advertisementList;
     }
 
-    public Long getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     @Override
@@ -56,7 +57,7 @@ public class Cart {
         return "Cart{" +
                 "id=" + id +
                 ", advertisementList=" + advertisementList +
-                ", userId=" + userId +
+                ", user=" + user +
                 '}';
     }
 }
