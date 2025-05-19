@@ -1,12 +1,12 @@
-package com.vbartere.Advertisement.kafka;
+package com.vbartere.Advertisement.kafka.Service.Consumers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Service.AdvertisementService;
-import com.vbartere.Advertisement.kafka.Service.Advertisement.MissingAdvertisementService;
-import com.vbartere.Advertisement.kafka.Service.Cache.SendCacheService;
+import com.vbartere.Advertisement.kafka.Service.Producers.Advertisement.MissingAdvertisementService;
+import com.vbartere.Advertisement.kafka.Service.Producers.Cache.SendCacheService;
 import com.vbartere.Shared.Kafka.DTO.Advertisement.AdvertisementDTO;
 import com.vbartere.Shared.Kafka.Events.CartEvent;
 import com.vbartere.Shared.Kafka.Events.CartResult;
@@ -34,7 +34,7 @@ public class KafkaCartEventConsumer {
     }
 
 
-    @KafkaListener(topics = "cart-events", groupId = "advertisement-group",
+    @KafkaListener(topics = "cart.events", groupId = "advertisement.group",
             containerFactory = "kafkaListenerContainerFactory")
     public void handleCartEvent(String message) throws JsonProcessingException {
         CartEvent event = objectMapper.readValue(message, CartEvent.class);

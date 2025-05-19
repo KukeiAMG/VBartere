@@ -1,11 +1,12 @@
 package com.vbartere.Advertisement.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.Advertisement.Mapper.AdvertisementMapper;
-import com.vbartere.Advertisement.kafka.Service.Admin.SendAdminService;
-import com.vbartere.Advertisement.kafka.Service.Cache.CacheAwaiterService;
-import com.vbartere.Advertisement.kafka.Service.Cache.SendCacheService;
+import com.vbartere.Advertisement.kafka.Service.Producers.Admin.SendAdminService;
+import com.vbartere.Advertisement.kafka.Service.Producers.Cache.CacheAwaiterService;
+import com.vbartere.Advertisement.kafka.Service.Producers.Cache.SendCacheService;
 import com.vbartere.Advertisement.Model.Advertisement;
 import com.vbartere.Advertisement.Model.Image;
 import com.vbartere.Advertisement.Model.SubCategory;
@@ -22,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -53,40 +53,32 @@ public class AdvertisementService {
         this.sendAdminService = sendAdminService;
         this.advertisementMapper = advertisementMapper;
     }
-//    public AdvertisementDTO toDTO(Advertisement advertisement) {
-//        AdvertisementDTO dto = new AdvertisementDTO();
-//        dto.setId(advertisement.getId());
-//        dto.setTitle(advertisement.getTitle());
-//        dto.setDescription(advertisement.getDescription());
-//        dto.setOwnerId(advertisement.getOwnerId());
-//        dto.setBuyersId(advertisement.getBuyersId());
-//        dto.setStatus(advertisement.getStatus());
-//
-//        if (advertisement.getStatus() != null) {
-//            dto.setStatus(advertisement.getStatus());
-//        } else {
-//            dto.setStatus(false); // Значение по умолчанию, если status = null
-//        }
-//
-//        if (advertisement.getSubcategory() != null) {
-//            dto.setSubCategoryId(advertisement.getSubcategory().getId());
-//        }
-//
-//        if (advertisement.getImageList() != null && !advertisement.getImageList().isEmpty()) {
-//            List<Long> imageIds = new ArrayList<>();
-//            for (Image image : advertisement.getImageList()) {
-//                imageIds.add(image.getId());
-//            }
-//            dto.setImagesId(imageIds);
-//        } else {
-//            dto.setImagesId(Collections.emptyList());
-//        }
-//
-//        return dto;
-//    }
 
-    public List<Advertisement> getAllAdvertisements() {
-        return advertisementRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<AdvertisementDTO> getAllAdvertisements() {
+        String cacheKey = "advertisements:all";
+        String cachedData = redisCommands.get(cacheKey);
+
+        if (cachedData != null) {
+            try {
+                return objectMapper.readValue(cachedData, new TypeReference<List<AdvertisementDTO>>() {});
+            } catch (JsonProcessingException e) {
+                System.err.println("Ошибка чтения списка из кэша: " + e.getMessage());
+            }
+        }
+
+        List<Advertisement> advertisements = advertisementRepository.findAll();
+
+
+        List<AdvertisementDTO> advertisementDTOs = new ArrayList<>();
+
+
+        for (Advertisement advertisement : advertisements) {
+            AdvertisementDTO dto = advertisementMapper.advertisementToDTO(advertisement);
+            advertisementDTOs.add(dto);
+        }
+
+        return advertisementDTOs;
     }
 
     @Transactional(readOnly = true)
@@ -97,31 +89,29 @@ public class AdvertisementService {
 
         if (cacheData != null) {
             System.out.println("Объявление " + id + " взято из кэша");
-            return objectMapper.readValue(cacheData, AdvertisementDTO.class);
-        } else {
-            Advertisement advertisement = advertisementRepository.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException("Объявления нет в БД"));
+            try {
+                return objectMapper.readValue(cacheData, AdvertisementDTO.class);
+            } catch (JsonProcessingException e) {
+                System.err.println("ошибка чтения из кэша: " + e.getMessage());
+            }
+        }
 
-            AdvertisementDTO advertisementDTO = advertisementMapper.advertisementToDTO(advertisement);
+        Advertisement advertisement = advertisementRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Объявления нет в БД"));
 
-            // Асинхронно отправляем в Kafka, не блокируя поток
+        AdvertisementDTO advertisementDTO = advertisementMapper.advertisementToDTO(advertisement);
+
+        try {
             sendCacheService.sendCacheRequest(objectMapper.writeValueAsString(advertisementDTO));
 
             CompletableFuture<Advertisement> future = cacheAwaiterService.awaitCache(advertisement.getId());
+            Advertisement advFromCache = future.get(10, TimeUnit.SECONDS);
 
-            AdvertisementDTO resultDto;
-            try {
-                Advertisement advFromCache = future.get(10, TimeUnit.SECONDS);
-                resultDto = advertisementMapper.advertisementToDTO(advFromCache);
-            } catch (TimeoutException e) {
-                System.err.println("Кэш ещё не готов: " + e.getMessage());
-                resultDto = advertisementDTO; // возвращаем DTO из базы
-            } catch (Exception e) {
-                System.err.println("Ошибка ожидания кэша: " + e.getMessage());
-                resultDto = advertisementDTO;
-            }
+            return advertisementMapper.advertisementToDTO(advFromCache);
 
-            return resultDto;
+        } catch (Exception e) {
+            System.err.println("\nкэш недоступен или не готов: " + e.getMessage());
+            return advertisementDTO; // fallback на локальную БД
         }
     }
 
@@ -138,11 +128,15 @@ public class AdvertisementService {
         advertisement.setOwnerId(userId);
 
         List<Image> images = new ArrayList<>();
-        for (int i = 0; i < files.size(); i++) {
-            MultipartFile file = files.get(i);
-            Image image = imageService.createImage(file);
-            image.setAdvertisement(advertisement);
-            images.add(image);
+        if (files != null) {
+            for (int i = 0; i < files.size(); i++) {
+                MultipartFile file = files.get(i);
+                Image image = imageService.createImage(file);
+                if (image != null) {
+                    image.setAdvertisement(advertisement);
+                    images.add(image);
+                }
+            }
         }
 
         if (!images.isEmpty()) {
@@ -152,37 +146,7 @@ public class AdvertisementService {
 
         Advertisement savedAd = advertisementRepository.save(advertisement);
 
-//        AdvertisementDTO responseDTO = new AdvertisementDTO();
-//        responseDTO.setId(savedAd.getId());
-//        responseDTO.setTitle(savedAd.getTitle());
-//        responseDTO.setDescription(savedAd.getDescription());
-//        responseDTO.setOwnerId(savedAd.getOwnerId());
-//        responseDTO.setBuyersId(savedAd.getBuyersId());
-//        responseDTO.setStatus(savedAd.getStatus());
-//
-//        if (savedAd.getSubcategory() != null) {
-//            responseDTO.setSubCategoryId(savedAd.getSubcategory().getId());
-//        }
-//
-//        List<Long> imageIds = new ArrayList<>();
-//        List<Image> savedImages = savedAd.getImageList();
-//        for (int i = 0; i < savedImages.size(); i++) {
-//            imageIds.add(savedImages.get(i).getId());
-//        }
-//
-//        responseDTO.setImagesId(imageIds);
         AdvertisementDTO responseDTO = advertisementMapper.advertisementToDTO(savedAd);
-
-//        AdminAdvertisementDTO adminAdvertisementDTO = new AdminAdvertisementDTO();
-//        adminAdvertisementDTO.setId(savedAd.getId());
-//        adminAdvertisementDTO.setTitle(savedAd.getTitle());
-//        adminAdvertisementDTO.setDescription(savedAd.getDescription());
-//        adminAdvertisementDTO.setOwnerId(savedAd.getOwnerId());
-//        adminAdvertisementDTO.setBuyersId(savedAd.getBuyersId());
-//        adminAdvertisementDTO.setStatus(savedAd.getStatus());
-//        adminAdvertisementDTO.setSubcategoryId(savedAd.getSubcategory().getId());
-//        adminAdvertisementDTO.setSubcategoryTitle(savedAd.getSubcategory().getName());
-//        adminAdvertisementDTO.setEventType(AdvertisementEventType.ADVERTISEMENT_CREATED);
 
         AdminAdvertisementDTO adminDto = advertisementMapper.toAdminDto(savedAd, AdvertisementEventType.ADVERTISEMENT_CREATED);
         sendAdminService.sendAdminRequest(objectMapper.writeValueAsString(adminDto));
