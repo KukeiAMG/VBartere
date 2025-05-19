@@ -11,4 +11,4 @@ COPY target/ChatService-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
 
 # Команда запуска
-ENTRYPOINT ["java", "-jar", "app.jar"]mn hjv
+ENTRYPOINT ["java", "-jar", "/app/target/ChatService-0.0.1-SNAPSHOT.jar"]mn hjv

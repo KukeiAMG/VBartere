@@ -14,5 +14,5 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
     Optional<ChatRoom> findByUser2IdAndUser1Id(String user1Id, String user2Id);
 
     // Найти все комнаты пользователя
-    List<ChatRoom> findByUser1IdOrUser2Id(String userId, String userId2);
+    List<ChatRoom> findByUser1IdOrUser2Id(String user1Id, String user2Id);
 }

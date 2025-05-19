@@ -1,82 +1,84 @@
 package com.example.ChatService.controller;
 
-import com.example.ChatService.DTO.CreateRoomRequest;
-import com.example.ChatService.model.ChatMessage;
 import com.example.ChatService.model.ChatRoom;
 import com.example.ChatService.repository.ChatMessageRepository;
 import com.example.ChatService.repository.ChatRoomRepository;
-import com.example.ChatService.service.UserService;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+/**
+ * REST контроллер для управления чат-комнатами и сообщениями.
+ * Предоставляет API для получения истории сообщений и списка чатов пользователя.
+ * Создание комнат происходит через Kafka при получении команды от User Service.
+ *
+ * @author KukeiAMG
+ * @version 1.0
+ */
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final UserService userService; // Feign-клиент к user-service
 
+    /**
+     * Конструктор контроллера чата.
+     *
+     * @param chatRoomRepository репозиторий для работы с чат-комнатами
+     * @param chatMessageRepository репозиторий для работы с сообщениями
+     */
     public ChatController(ChatRoomRepository chatRoomRepository,
-                          ChatMessageRepository chatMessageRepository,
-                          UserService userService) {
+                          ChatMessageRepository chatMessageRepository) {
         this.chatRoomRepository = chatRoomRepository;
         this.chatMessageRepository = chatMessageRepository;
-        this.userService = userService;
     }
 
-    // Создать чат-комнату
-    @PostMapping("/rooms")
-    public ResponseEntity<?> createRoom(@RequestBody CreateRoomRequest request) {
-        // 1. Асинхронная проверка пользователей через Kafka
-        userService.validateUserExists(request.getUser1Id());
-        userService.validateUserExists(request.getUser2Id());
-
-        // 2. Генерация ID комнаты (user1_user2, отсортировано)
-        String roomId = Stream.of(request.getUser1Id(), request.getUser2Id())
-                .sorted()
-                .collect(Collectors.joining("_"));
-
-        // 3. Проверка существования комнаты
-        if (chatRoomRepository.existsById(roomId)) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body("Chat room already exists");
-        }
-
-        // 4. Сохранение комнаты
-        ChatRoom room = new ChatRoom();
-        room.setId(roomId);
-        room.setUser1Id(request.getUser1Id());
-        room.setUser2Id(request.getUser2Id());
-        room.setCreatedAt(LocalDateTime.now());
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(chatRoomRepository.save(room));
-    }
-
-    // Получить список сообщений в комнате
+    /**
+     * Получает историю сообщений для указанной чат-комнаты.
+     * Проверяет, имеет ли текущий пользователь доступ к этой комнате.
+     *
+     * @param roomId ID комнаты
+     * @param userId ID пользователя из заголовка запроса
+     * @param pageable параметры пагинации
+     * @return ResponseEntity со списком сообщений или сообщением об ошибке
+     * @throws RuntimeException если комната не найдена
+     * 
+     * @apiNote Сообщения возвращаются в порядке убывания по времени создания
+     */
     @GetMapping("/rooms/{roomId}/messages")
-    public List<ChatMessage> getMessages(@PathVariable String roomId, Pageable pageable) {
-        return chatMessageRepository.findByChatRoomIdOrderByTimestampDesc(roomId, pageable);
+    public ResponseEntity<?> getMessages(@PathVariable String roomId, @RequestHeader("User-Id") String userId, Pageable pageable) {
+        // Проверяем, что пользователь имеет доступ к комнате
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+                
+
+        // Проверяем, что userId совпадает с id одного из участников чата (user1Id или user2Id)
+        // Если userId не совпадает ни с одним из участников - возвращаем ошибку 403 Forbidden
+        if (!room.getUser1Id().equals(userId) && !room.getUser2Id().equals(userId)) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .body("Access denied");
+        }
+        
+        return ResponseEntity.ok(
+            chatMessageRepository.findByChatRoomIdOrderByTimestampDesc(roomId, pageable)
+        );
     }
 
-    // Получить список комнат пользователя
+    /**
+     * Получает список всех чат-комнат пользователя.
+     * Возвращает комнаты, где пользователь является одним из участников.
+     *
+     * @param userId ID пользователя
+     * @return ResponseEntity со списком комнат
+     */
     @GetMapping("/users/{userId}/rooms")
-    public List<ChatRoom> getUserRooms(@PathVariable String userId) {
-        return chatRoomRepository.findByUser1IdOrUser2Id(userId, userId);
-    }
-
-    private String generateRoomId(String user1Id, String user2Id) {
-        return user1Id.compareTo(user2Id) < 0
-                ? user1Id + "_" + user2Id
-                : user2Id + "_" + user1Id;
+    public ResponseEntity<List<ChatRoom>> getUserRooms(@PathVariable String userId) {
+        return ResponseEntity.ok(
+            chatRoomRepository.findByUser1IdOrUser2Id(userId, userId)
+        );
     }
 }

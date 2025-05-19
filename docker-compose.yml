@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat_user -d chat_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
@@ -37,14 +42,17 @@ services:
   chat-service:
     build: .
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: dev
     volumes:
       - ./:/app
+    command: ["./wait-for-postgres.sh", "postgres:5432", "--", "java", "-jar", "/app/target/ChatService-0.0.1-SNAPSHOT.jar"]
 
 volumes:
   postgres_data:
