@@ -1,4 +1,4 @@
-package com.vbartere.Advertisement.kafka.Service.Producers.Advertisement;
+package com.vbartere.Advertisement.kafka.Service.Advertisement;
 
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 public class MissingAdvertisementService {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    private final String TOPIC = "missing.advertisements";
+    private final String TOPIC = "missing-advertisements";
 
     public MissingAdvertisementService(KafkaTemplate<String, String> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;

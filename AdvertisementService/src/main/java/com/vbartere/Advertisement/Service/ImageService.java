@@ -94,10 +94,6 @@ public class ImageService {
 
     @Transactional
     public Image createImage(MultipartFile file) throws IOException {
-        if (file == null || file.isEmpty()) {
-            return null;
-        }
-
         String uploadDir = IMAGE_DIR;
         File dir = new File(uploadDir);
         if (!dir.exists()) {

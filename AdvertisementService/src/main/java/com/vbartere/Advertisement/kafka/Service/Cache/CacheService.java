@@ -1,4 +1,4 @@
-package com.vbartere.Advertisement.kafka.Service.Producers.Cache;
+package com.vbartere.Advertisement.kafka.Service.Cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -13,7 +13,7 @@ public class CacheService {
         this.cacheAwaiterService = cacheAwaiterService;
     }
 
-    @KafkaListener(topics = "cache.ready", groupId = "redis.cache.service.group")
+    @KafkaListener(topics = "cache-ready", groupId = "redis-cache-service-group")
     public void onCacheReady(String advertisementID) throws JsonProcessingException {
         Long id = Long.parseLong(advertisementID);
         System.out.println("Отправили в cacheAwaiterService.completeCache(id)" + id);

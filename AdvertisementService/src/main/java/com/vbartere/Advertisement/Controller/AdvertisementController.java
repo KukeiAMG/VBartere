@@ -25,8 +25,8 @@ public class AdvertisementController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<AdvertisementDTO>> getAllAdvertisements() {
-        List<AdvertisementDTO> advertisementList = advertisementService.getAllAdvertisements();
+    public ResponseEntity<List<Advertisement>> getAllAdvertisements() {
+        List<Advertisement> advertisementList = advertisementService.getAllAdvertisements();
         return ResponseEntity.ok(advertisementList);
     }
 
@@ -37,7 +37,7 @@ public class AdvertisementController {
 
     @PostMapping(value = "/create", consumes = {"multipart/form-data"})
     public ResponseEntity<?> createAdvertisement( @RequestPart("advertisement") AdvertisementDTO advertisementDTO,
-                                                  @RequestPart(value = "files", required = false) List<MultipartFile> files,
+                                                  @RequestPart("files") List<MultipartFile> files,
                                                   @RequestHeader("user-ID") Long userId) {
         try {
             AdvertisementDTO createdAd = advertisementService.createAdvertisement(advertisementDTO, files, userId);
