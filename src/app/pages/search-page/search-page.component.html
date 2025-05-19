@@ -5,6 +5,8 @@
     @for (advertisement of advertisements; track advertisement.id) {
       <app-tovar-card
         [advertisement]="advertisement"
+        [isInProfile]="false"
+        [isMyProfile]="false"
       ></app-tovar-card>
     }
   </div>

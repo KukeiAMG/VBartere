@@ -1,46 +1,38 @@
-import { Component } from '@angular/core';
-import { AnimatedBackgroundComponent } from '../../my-shenanigans/animated-background/animated-background.component';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SvgIconComponent } from '../../common-ui/svg-icon/svg-icon.component';
-import { RouterLink } from '@angular/router';
+import { RouterModule } from '@angular/router';
+import { TovarCardComponent } from '../../common-ui/tovar-card/tovar-card.component';
+import {AnimatedBackgroundComponent} from '../../my-shenanigans/animated-background/animated-background.component';
+import { CartService } from '../../data/services/cart.service';
 import { Advertisement } from '../../data/Interfaces/advertisement.interface';
-
-
 
 @Component({
   selector: 'app-cart-page',
-  standalone: true,
-  imports: [
-    CommonModule,
-    AnimatedBackgroundComponent,
-    SvgIconComponent,
-    RouterLink
-  ],
   templateUrl: './cart-page.component.html',
-  styleUrl: './cart-page.component.scss'
+  styleUrls: ['./cart-page.component.scss'],
+  standalone: true,
+  imports: [CommonModule, RouterModule, TovarCardComponent, AnimatedBackgroundComponent]
 })
-export class CartPageComponent {
-  cartItems: Partial<Advertisement>[] = [
-    // Временные данные для примера
-    {
-      id: 1,
-      title: 'iPhone 12',
-      description: 'Отличное состояние, без царапин',
-      imageList: ['/assets/images/iphone.jpg']
-    },
-    {
-      id: 2,
-      title: 'MacBook Pro',
-      description: '2019 год, 16GB RAM',
-      imageList: ['/assets/images/macbook.jpg']
-    }
-  ];
+export class CartPageComponent implements OnInit {
+  cartItems: Advertisement[] = [];
 
-  removeFromCart(itemId: number) {
-    this.cartItems = this.cartItems.filter(item => item.id !== itemId);
+  constructor(private cartService: CartService) {}
+
+  ngOnInit(): void {
+    this.loadCartItems();
   }
 
-  clearCart() {
-    this.cartItems = [];
+  loadCartItems(): void {
+    this.cartItems = this.cartService.getCartItems();
+  }
+
+  removeFromCart(itemId: number): void {
+    this.cartService.removeFromCart(itemId);
+    this.loadCartItems();
+  }
+
+  clearCart(): void {
+    this.cartService.clearCart();
+    this.loadCartItems();
   }
 } 

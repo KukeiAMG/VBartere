@@ -66,7 +66,6 @@ createAdvertisement(): void {
   
   this.authService.getCurrentUserId().subscribe({
     next: (userId) => {
-      // Убедитесь, что advertisementData содержит все необходимые поля
       const advertisementDTO: AdvertisementDTO = {
         title: this.advertisementData.title,
         description: this.advertisementData.description,

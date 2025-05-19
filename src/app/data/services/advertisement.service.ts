@@ -29,21 +29,21 @@ export class AdvertisementService {
   ): Observable<any> {
     const formData = new FormData();
   
-    // 1. Добавляем advertisement как JSON-строку с правильным content-type
+    // Добавляем advertisement как JSON-строку с правильным content-type
     const advertisementBlob = new Blob(
       [JSON.stringify(advertisement)], 
       { type: 'application/json' }
     );
     formData.append('advertisement', advertisementBlob);
   
-    // 2. Добавляем файлы с ключом "files"
+
     files.forEach(file => {
       formData.append('files', file, file.name);
     });
   
-    // 3. Устанавливаем заголовки
+
     const headers = new HttpHeaders({
-      'user-ID': userId.toString()
+      'user-ID': userId
     });
   
     return this.http.post(
@@ -62,8 +62,37 @@ export class AdvertisementService {
   }
 
   // Обновить объявление
-  updateAdvertisement(id: number, advertisement: Partial<Advertisement>): Observable<Advertisement> {
-    return this.http.put<Advertisement>(`${this.baseApiUrl}${id}`, advertisement);
+  updateAdvertisement(id: number, advertisement: AdvertisementDTO, files?: File[]): Observable<any> {
+    const formData = new FormData();
+  
+    // Добавляем advertisement как JSON-строку с правильным content-type
+    const advertisementBlob = new Blob(
+      [JSON.stringify(advertisement)], 
+      { type: 'application/json' }
+    );
+    formData.append('advertisement', advertisementBlob);
+
+    // Добавляем файлы только если они есть
+    if (files && files.length > 0) {
+      files.forEach(file => {
+        formData.append('files', file, file.name);
+      });
+    } else {
+      formData.append('files', new Blob());
+    }
+  
+    return this.http.put(
+      `${this.baseApiUrl}${id}/update`,
+      formData,
+      { 
+        responseType: 'json' 
+      }
+    ).pipe(
+      catchError(error => {
+        console.error('Error updating advertisement:', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   // Удалить объявление
@@ -73,7 +102,9 @@ export class AdvertisementService {
 
   // Получить объявления пользователя
   getUserAdvertisements(userId: number): Observable<Advertisement[]> {
-    return this.http.get<Advertisement[]>(`${this.baseApiUrl}user/${userId}`);
+    return this.http.get<Advertisement[]>(`${this.baseApiUrl}all`).pipe(
+      map(advertisements => advertisements.filter(ad => ad.ownerId === userId))
+    );
   }
 
   // Поиск объявлений

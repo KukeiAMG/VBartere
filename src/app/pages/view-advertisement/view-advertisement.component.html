@@ -1,0 +1,70 @@
+@if (isLoading) {
+  <div class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Загрузка объявления...</p>
+  </div>
+} @else if (advertisement) {
+  <div class="view-advertisement-container">
+    <div class="advertisement-header">
+      <h1>{{ advertisement.title }}</h1>
+      @if (isOwner) {
+        <button class="btn btn-shadow" (click)="navigateToEdit()">
+          <svg icon="settings"></svg>
+          Редактировать
+        </button>
+      }
+    </div>
+
+    <div class="advertisement-content">
+      <div class="images-section">
+        @if (advertisement.imageList && advertisement.imageList.length > 0) {
+          <div class="main-image">
+            <img [src]="getImageUrl(advertisement.imageList[0].id)" [alt]="advertisement.title">
+          </div>
+          @if (advertisement.imageList.length > 1) {
+            <div class="thumbnail-list">
+              @for (image of advertisement.imageList; track image.id) {
+                <div class="thumbnail">
+                  <img [src]="getImageUrl(image.id)" [alt]="advertisement.title">
+                </div>
+              }
+            </div>
+          }
+        } @else {
+          <div class="no-image" >
+            <span>Нет изображений</span>
+          </div>
+        }
+      </div>
+
+      <div class="details-section">
+        <div class="description">
+          <h2>Описание</h2>
+          <p>{{ advertisement.description }}</p>
+        </div>
+
+        <div class="additional-info">
+          <div class="info-item">
+            <span class="label">Категория:</span>
+            <span class="value">{{ advertisement.subCategoryId }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Статус:</span>
+            <span class="value">{{ advertisement.status ? 'Активно' : 'Неактивно' }}</span>
+          </div>
+        </div>
+
+        @if (!isOwner) {
+          <div class="action-buttons">
+            <button class="btn btn-shadow">Добавить в корзину</button>
+            <button class="btn btn-outline">Написать продавцу</button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="error-container">
+    <p>{{ errorMessage || 'Объявление не найдено' }}</p>
+  </div>
+} 

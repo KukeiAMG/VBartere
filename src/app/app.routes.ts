@@ -8,6 +8,8 @@ import {SettingsPageComponent} from './pages/settings-page/settings-page.compone
 import {RegisterPageComponent} from './pages/register-page/register-page.component';
 import {CartPageComponent} from './pages/cart-page/cart-page.component';
 import {CreateAdvertisementComponent} from './pages/create-advertisement/create-advertisement.component';
+import {EditAdvertisementComponent} from './pages/edit-advertisement/edit-advertisement.component';
+import {ViewAdvertisementComponent} from './pages/view-advertisement/view-advertisement.component';
 
 
 export const routes: Routes = [
@@ -19,6 +21,8 @@ export const routes: Routes = [
       {path: 'settings', component: SettingsPageComponent},
       {path: 'cart', component: CartPageComponent},
       {path: 'create-advertisement', component: CreateAdvertisementComponent},
+      {path: 'edit-advertisement/:id', component: EditAdvertisementComponent},
+      {path: 'advertisement/:id', component: ViewAdvertisementComponent},
     ],
     canActivate: [canActivateAuth]
   },

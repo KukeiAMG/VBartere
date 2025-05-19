@@ -1,24 +1,24 @@
 @if (advertisement){
+  @if (!isInProfile){
+    <div class="tovar-card" [routerLink]="['/advertisement', advertisement.id]">
+      <div class="tovar-name">
+        @if (advertisement.imageList && advertisement.imageList.length) {
+          <img [src]="imageService.getImage(advertisement.imageList[0].id)" [alt]="advertisement.title" class="tovar-card__MainPicture">
+        } @else {
+          <img src="/assets/images/avatar_placeholder.png" [alt]="advertisement.title" class="tovar-card__MainPicture">
+        }
 
-<div class="tovar-card">
-  <div class="tovar-name">
-    @if (advertisement.imageList && advertisement.imageList.length) {
-      <img [src]="advertisement.imageList[0] | imgUrls" [alt]="advertisement.title" class="tovar-card__MainPicture">
-    } @else {
-      <img src="/assets/images/avatar_placeholder.png" [alt]="advertisement.title" class="tovar-card__MainPicture">
-    }
+        <div class="tovar-card__name">
+          <strong class="h6">{{ advertisement.title }}</strong>
+          <span class="subtitle">{{advertisement.title}}</span>
+        </div>
+      </div>
 
-    <div class="tovar-card__name">
-      <strong class="h6">{{ advertisement.title }}</strong>
-      <span class="subtitle">{{advertisement.title}}</span>
-    </div>
-  </div>
+      <div class="tovar-card__description">
+        {{advertisement.description}}
+      </div>
 
-  <div class="tovar-card__description">
-    {{advertisement.description}}
-  </div>
-
-  <div class="tovar-card__tags">
+      <div class="tovar-card__tags">
 <!--    @for(skill of advertisement.stack; track skill) {
     <div class="type-tag">{{skill}}</div>
     }-->
@@ -28,6 +28,35 @@
     <button class="btn">Добавить в корзину</button>
   </div>
 </div>
+  }
+
+  @else{
+    <div class="tovar-card__profile">
+      <div class="tovar-name">
+        @if (advertisement.imageList && advertisement.imageList.length) {
+          <img [src]="imageService.getImage(advertisement.imageList[0].id)" [alt]="advertisement.title" class="tovar-card__MainPicture__profile">
+        } @else {
+          <img src="/assets/images/avatar_placeholder.png" [alt]="advertisement.title" class="tovar-card__MainPicture__profile">
+        }
+    
+        <div class="tovar-card__name">
+          <strong class="medium-text">{{ advertisement.title }}</strong>
+        </div>
+      </div>
+    
+      <div class="tovar-card__description medium-text">
+        {{advertisement.description}}
+      </div>
+    
+      @if (isMyProfile){
+        <a [routerLink]="['/edit-advertisement', advertisement.id]" class="settings-btn">
+          <svg icon="settings"></svg>
+        </a>
+      }
+    
+    </div>
+  }
+
 } @else {
-  doldoldol
+  <div class="loading">Загрузка...</div>
 }

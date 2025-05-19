@@ -1,55 +1,59 @@
 <div class="main-wrapper">
   <app-animated-background></app-animated-background>
   <div class="content">
-    <header class="cart-header">
-      <h1 class="h1">Корзина</h1>
+    <header class="profile-page__header">
+      <h1 class="h4">Корзина</h1>
       <div class="cart-actions">
-        <button class="btn btn-shadow" (click)="clearCart()">
-          Очистить корзину
-          <svg icon="trash" class="trash-icon"></svg>
-        </button>
+        @if (cartItems.length > 0) {
+          <button class="btn btn-shadow" (click)="clearCart()">
+            Очистить корзину
+            <svg icon="trash" class="trash-icon"></svg>
+          </button>
+        }
       </div>
     </header>
 
-    <main class="cart-content">
-      @if (cartItems.length > 0) {
-        <div class="cart-items">
-          @for (item of cartItems; track item.id) {
-            <div class="cart-item">
-              <div class="item-info">
-                <!-- <img [src]="item.imageList[0]" [alt]="item.title" class="item-image"> -->
-                <div class="item-details">
-                  <h3 class="h6">{{item.title}}</h3>
-                  <p class="medium-text">{{item.description}}</p>
-                </div>
-              </div>
-              <div class="item-actions">
-                <button class="remove-btn" (click)="removeFromCart(item.id ?? 0)">
-                  <svg icon="close" class="close-icon"></svg>
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-
-        <div class="cart-summary">
-          <div class="summary-row">
-            <span class="medium-text">Всего товаров:</span>
-            <span class="h6">{{cartItems.length}}</span>
+    <main class="profile-page__body">
+      <div class="user-advertisements">
+        <h3 class="h6 mb16">Товары в корзине</h3>
+        @if (cartItems.length > 0) {
+          <div class="tovar-card__wrapper">
+            @for (item of cartItems; track item.id) {
+              <app-tovar-card
+                [advertisement]="item"
+                [isInProfile]="false"
+                [isMyProfile]="false"
+              ></app-tovar-card>
+            }
           </div>
-          <button class="btn btn-shadow checkout-btn">
-            Оформить обмен
-          </button>
-        </div>
-      } @else {
-        <div class="empty-cart">
-          <h2 class="h4">Корзина пуста</h2>
-          <p class="medium-text">Добавьте товары для обмена</p>
-          <a [routerLink]="['/']" class="btn btn-shadow">
-            Перейти к поиску
-          </a>
-        </div>
-      }
+
+          <div class="cart-summary">
+            <div class="summary-row">
+              <span class="medium-text">Всего товаров:</span>
+              <span class="h6">{{cartItems.length}}</span>
+            </div>
+            <button class="btn btn-shadow checkout-btn">
+              Оформить обмен
+            </button>
+          </div>
+        } @else {
+          <div class="empty-cart">
+            <h2 class="h4">Корзина пуста</h2>
+            <p class="medium-text">Добавьте товары для обмена</p>
+            <a [routerLink]="['/']" class="btn btn-shadow">
+              Перейти к поиску
+            </a>
+          </div>
+        }
+      </div>
+
+      <div class="profile-info">
+        <h3 class="h6 mb16">Информация</h3>
+        <p class="medium-text">
+          Здесь вы можете управлять товарами, которые хотите обменять. 
+          Добавляйте товары в корзину, чтобы начать процесс обмена.
+        </p>
+      </div>
     </main>
   </div>
 </div> 

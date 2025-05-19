@@ -1,25 +1,46 @@
 import {Component, inject, Input} from '@angular/core';
 import {Profile} from '../../data/Interfaces/profile.interface';
 import {ImgUrlsPipe} from '../../helpers/pipes/img-urls.pipe';
-import { Advertisement, AdvertisementDTO } from '../../data/Interfaces/advertisement.interface';
+import { Advertisement, AdvertisementDTO, AdvertisementImage } from '../../data/Interfaces/advertisement.interface';
 import { AdvertisementService } from '../../data/services/advertisement.service';
 import { AuthService } from '../../auth/auth.service';
 import { tap } from 'rxjs';
+import { RouterModule } from '@angular/router';
+import { SvgIconComponent } from '../svg-icon/svg-icon.component';
+import { ImageService } from '../../data/services/image.service';
 
 @Component({
   selector: 'app-tovar-card',
   imports: [
-    ImgUrlsPipe
+    ImgUrlsPipe,
+    RouterModule,
+    SvgIconComponent
   ],
   templateUrl: './tovar-card.component.html',
   styleUrl: './tovar-card.component.scss'
 })
 export class TovarCardComponent {
   @Input() public advertisement!: Advertisement;
+  @Input() public isInProfile = false;
+  @Input() public isMyProfile = false;
   selectedFiles: File[] = [];
   authService = inject(AuthService);
+  imageService = inject(ImageService);
 
-  constructor(private advertisementService: AdvertisementService) {}
+  constructor(private advertisementService: AdvertisementService) {
+    // Для тестирования добавляем случайные изображения
+    if (this.advertisement && !this.advertisement.imageList) {
+      this.advertisement.imageList = [{
+        id: 1,
+        size: 0,
+        name: 'placeholder.png',
+        originalFileName: 'placeholder.png',
+        contentType: 'image/png',
+        filePath: '',
+        previewImage: true
+      }];
+    }
+  }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;

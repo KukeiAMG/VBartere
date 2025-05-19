@@ -9,6 +9,10 @@ import {AsyncPipe, NgForOf} from '@angular/common';
 import {SvgIconComponent} from '../../common-ui/svg-icon/svg-icon.component';
 import {SubscribedItemsComponent} from '../../common-ui/sidebar/subscribed-items/subscribed-items.component';
 import {ImgUrlsPipe} from '../../helpers/pipes/img-urls.pipe';
+import {AdvertisementService} from '../../data/services/advertisement.service';
+import {TovarCardComponent} from '../../common-ui/tovar-card/tovar-card.component';
+import {Advertisement} from '../../data/Interfaces/advertisement.interface';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-profile-page',
@@ -21,23 +25,34 @@ import {ImgUrlsPipe} from '../../helpers/pipes/img-urls.pipe';
     SvgIconComponent,
     NgForOf,
     SubscribedItemsComponent,
-    ImgUrlsPipe
+    ImgUrlsPipe,
+    TovarCardComponent
   ],
   templateUrl: './profile-page.component.html',
   styleUrl: './profile-page.component.scss'
 })
 export class ProfilePageComponent {
   profileService = inject(ProfileService);
+  advertisementService = inject(AdvertisementService);
+  authService = inject(AuthService);
   route = inject(ActivatedRoute);
 
   profileId = this.route.snapshot.params['id'];
-  me$ = toObservable(this.profileService.me)
+  me$ = this.profileService.getMe()
   subscribed$ = this.profileService.getSubscribedShortList(5)
 
+  userAdvertisements$ = this.route.params.pipe(
+    switchMap(({id}) => {
+      return this.authService.getCurrentUserId().pipe(
+        switchMap(userId => {
+          return this.advertisementService.getUserAdvertisements(userId);
+        })
+      );
+    })
+  );
 
   ngOnInit() {
     console.log('Profile ID from URL:', this.profileId);
-    console.log('My profile ID:', this.profileService.me()?.id);
     this.profileService.loadMe(true);
   }
 
@@ -57,5 +72,4 @@ export class ProfilePageComponent {
         : this.profileService.getAccount(id);
     })
   );
-
 }

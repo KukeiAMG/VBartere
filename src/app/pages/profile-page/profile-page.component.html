@@ -2,40 +2,47 @@
   <div class="content">
     @if (profile$ | async; as profile){
       <header class="profile-page__header">
-
         <app-profile-header
             [profile]="profile"
         ></app-profile-header>
 
         @if( isMyProfile$ | async){
+          <a class="btn to-creating-btn" [routerLink]="['/create-advertisement']">
+            Создать объявление
+          </a>
           <a class="btn to-settings-btn" [routerLink]="['/settings']">
             Редактировать
             <svg icon="settings" class="to-settings-icon"></svg>
           </a>
         }
-
-
       </header>
 
       <main class="profile-page__body">
-
-        <div></div>
-
-
-        <div>
-          @if( isMyProfile$ | async){
-          <h3 class="h6 mb16">Закреплённые товары</h3>
-
-          <div class="subscribed-wrapper mb32">
-          <!--@for (profile of subscribed$ | async; track profile.id){
-            <a class="subscribed-photo-btn" [routerLink]="['/profile', profile.id]">
-              <img [src]="profile.avatarUrl | imgUrls" alt="">
-            </a>
-          }-->
-            <a class="to-search-btn" [routerLink]="['/']">
-
-            </a>
+        <div class="user-advertisements">
+          <h3 class="h6 mb16">Объявления пользователя</h3>
+          <div class="tovar-card__wrapper">
+            @for (advertisement of userAdvertisements$ | async; track advertisement.id) {
+              <app-tovar-card
+                [advertisement]="advertisement"
+                [isInProfile]="true"
+                [isMyProfile]="(isMyProfile$ | async) ?? false"
+              ></app-tovar-card>
+            }
           </div>
+        </div>
+
+        <div class="profile-info">
+          @if( isMyProfile$ | async){
+            <h3 class="h6 mb16">Закреплённые товары</h3>
+            <div class="subscribed-wrapper mb32">
+              <!--@for (profile of subscribed$ | async; track profile.id){
+                <a class="subscribed-photo-btn" [routerLink]="['/profile', profile.id]">
+                  <img [src]="profile.avatarUrl | imgUrls" alt="">
+                </a>
+              }-->
+              <a class="to-search-btn" [routerLink]="['/']">
+              </a>
+            </div>
           }
 
           <h3 class="h6 mb16">О себе</h3>
@@ -44,7 +51,5 @@
           </p>
         </div>
       </main>
-
     }
-
   </div>

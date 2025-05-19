@@ -29,3 +29,52 @@
   gap: 4px;
   height: min-content;
 }
+
+.tovar-card__profile {
+  border: 1px solid var(--light-color);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  background: var(--dark-color);
+  border-radius: 8px;
+}
+
+.tovar-name__profile {
+  display: grid;
+  grid-template-columns: 45px 1fr;
+  grid-gap: 12px;
+  align-items: start;
+}
+
+.tovar-card__MainPicture__profile {
+  width: 45px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.tovar-card__name__profile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tovar-card__tags__profile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  height: min-content;
+}
+
+.settings-btn{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  svg{
+    width: 18px;
+    height: 18px;
+    color: var(--click-color);
+  }
+}
