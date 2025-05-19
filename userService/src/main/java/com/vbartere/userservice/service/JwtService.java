@@ -10,27 +10,15 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
 
     @Value("${jwt.secret}")
     private String SECRET_KEY;
-
-//    public String generateToken(String phoneNumber) {
-//        Map<String, Object> claims = new HashMap<>();
-//        return createToken(claims, phoneNumber, 7 * 24 * 60 * 60 * 1000); // 10 часов
-//    }
-//
-//    public String generateRefreshToken(String phoneNumber) {
-//        Map<String, Object> claims = new HashMap<>();
-//        return createToken(claims, phoneNumber, 7 * 24 * 60 * 60 * 1000); // 7 дней
-//    }
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
@@ -73,8 +61,9 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .setSigningKey(Base64.getDecoder().decode(SECRET_KEY))  // Преобразование ключа в байты
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())  // Преобразование ключа в байты
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
@@ -92,5 +81,29 @@ public class JwtService {
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
+
+    public List<String> extractRoles(String token) {
+        Claims claims = extractAllClaims(token);
+        Object roles = claims.get("roles");
+
+        if (roles instanceof List<?>) {
+            return ((List<?>) roles).stream()
+                    .map(roleObj -> {
+                        if (roleObj instanceof Map) {
+                            // Приводим к Map и вытаскиваем поле name
+                            Map<?, ?> roleMap = (Map<?, ?>) roleObj;
+                            Object name = roleMap.get("name");
+                            return name != null ? name.toString() : "";
+                        }
+                        // Если не Map — возвращаем toString (на всякий случай)
+                        return roleObj.toString();
+                    })
+                    .filter(name -> !name.isEmpty())
+                    .collect(Collectors.toList());
+        }
+
+        return List.of();
+    }
+
 }
 
