@@ -5,6 +5,7 @@ import com.vbartere.Advertisement.Security.JwtFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -31,12 +32,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/advertisements/create").hasAuthority("ROLE_USER")
-                        .requestMatchers(HttpMethod.PUT, "/api/advertisements/**/update").hasAuthority("ROLE_USER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/advertisements/**/delete").hasAuthority("ROLE_USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/advertisements/{id}/update").hasAuthority("ROLE_USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/advertisements/{id}/delete").hasAuthority("ROLE_USER")
                         .requestMatchers("/images/**").hasRole("USER")
                         .anyRequest().permitAll()
                 )

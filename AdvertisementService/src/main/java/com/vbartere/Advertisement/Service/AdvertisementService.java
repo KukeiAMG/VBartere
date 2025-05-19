@@ -182,11 +182,16 @@ public class AdvertisementService {
             List<Image> images = new ArrayList<>();
             for (MultipartFile file : files) {
                 Image image = imageService.createImage(file);
-                image.setAdvertisement(advertisement);
-                images.add(image);
+                if (image != null) {
+                    image.setAdvertisement(advertisement);
+                    images.add(image);
+                }
             }
-            images.get(0).setPreviewImage(true);
-            advertisement.setImageList(images);
+
+            if (!images.isEmpty()) {
+                images.get(0).setPreviewImage(true);
+                advertisement.setImageList(images);
+            }
         }
 
         Advertisement savedAd = advertisementRepository.save(advertisement);
