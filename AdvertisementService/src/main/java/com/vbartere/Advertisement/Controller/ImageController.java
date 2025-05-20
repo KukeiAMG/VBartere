@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -66,13 +67,13 @@ public class ImageController {
         return ResponseEntity.ok(images);
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<?> uploadImage(@RequestPart("files") List<MultipartFile> files) {
+    @DeleteMapping("/{id}")
+    private ResponseEntity<?> deleteImageById(@PathVariable("id") Long id) {
         try {
-            List<ImageDTO> imageDTOs = imageService.createImages(files);
-            return ResponseEntity.ok(imageDTOs);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            imageService.deleteImageById(id);
+            return ResponseEntity.ok().body("Изображения успешно удалено");
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         }
     }

@@ -122,7 +122,7 @@ public class ImageService {
     public List<ImageDTO> createImages(List<MultipartFile> files) throws IOException {
         List<Image> images = new ArrayList<>();
         for (MultipartFile file : files) {
-            Image image = toImageEntity(file); // сохранить файл на диск и получить сущность с путём
+            Image image = toImageEntity(file);
             images.add(image);
         }
         List<Image> savedImages = imageRepository.saveAll(images);
@@ -136,7 +136,7 @@ public class ImageService {
             dto.setContentType(img.getContentType());
             dto.setSize(img.getSize());
             dto.setPreviewImage(img.isPreviewImage());
-            dto.setUrl("/images/" + img.getId());  // формируем URL для отдачи клиенту
+            dto.setUrl("/images/" + img.getId());
             result.add(dto);
         }
 
@@ -149,14 +149,41 @@ public class ImageService {
                 .orElseThrow(() -> new EntityNotFoundException("Изображение не найдено"));
 
         if (image.getFilePath() != null) {
-            Path path = Paths.get(image.getFilePath());
             try {
-                Files.deleteIfExists(path);
+                Files.deleteIfExists(Paths.get(image.getFilePath()));
             } catch (IOException e) {
-                System.err.println("Не удалось удалить файл: " + path + ", причина: " + e.getMessage());
+                System.err.println("Не удалось удалить файл: " + image.getFilePath() + ", причина: " + e.getMessage());
             }
         }
 
+        Advertisement advertisement = image.getAdvertisement();
+
         imageRepository.delete(image);
+
+        if (advertisement != null) {
+            List<Image> images = advertisement.getImageList();
+            if (images == null) {
+                images = new ArrayList<>();
+            }
+
+            for (int i = 0; i < images.size(); i++) {
+                if (images.get(i).getId().equals(id)) {
+                    images.remove(i);
+                    break;
+                }
+            }
+
+            if (image.isPreviewImage()) {
+                for (Image img : images) {
+                    img.setPreviewImage(false);
+                }
+                if (!images.isEmpty()) {
+                    images.getFirst().setPreviewImage(true);
+                }
+            }
+
+            advertisement.setImageList(images);
+            advertisementRepository.save(advertisement);
+        }
     }
 }

@@ -116,6 +116,13 @@ public class AdvertisementService {
     }
 
     @Transactional
+    public Advertisement getAdvertisementEntity(Long id) {
+        return advertisementRepository.findById(id).orElseThrow(
+                () -> new EntityNotFoundException("Объявление не найдено в БД")
+        );
+    }
+
+    @Transactional
     public AdvertisementDTO createAdvertisement(AdvertisementDTO advertisementDTO, List<MultipartFile> files, Long userId) throws IOException {
         SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Подкатегория не найдена"));
@@ -154,11 +161,23 @@ public class AdvertisementService {
         return responseDTO;
     }
 
+    /**
+     * DEPRECATED
+     * <p> Этот метод используется исключительно для сдачи
+     * <p> Вместо него нужно использовать: {@link AdvertisementService#updateAdvertisementFields} и 
+     * {@link AdvertisementService#updateAdvertisementImages}
+     */
     @Transactional
     public AdvertisementDTO updateAdvertisementById(Long advertisementID, AdvertisementDTO advertisementDTO, List<MultipartFile> files) throws IOException, ExecutionException, InterruptedException {
 
         Advertisement advertisement = advertisementRepository.findById(advertisementID)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
+
+        List<Image> oldImages = new ArrayList<>(advertisement.getImageList());
+        for (Image img : oldImages) {
+            imageService.deleteImageById(img.getId());
+        }
+        advertisement.getImageList().clear();
 
         if (advertisementDTO.getSubCategoryId() != null) {
             SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
@@ -179,26 +198,101 @@ public class AdvertisementService {
         }
 
         if (files != null && !files.isEmpty()) {
-            List<Image> images = new ArrayList<>();
+            List<Image> newImages = new ArrayList<>();
             for (MultipartFile file : files) {
                 Image image = imageService.createImage(file);
                 if (image != null) {
                     image.setAdvertisement(advertisement);
-                    images.add(image);
+                    newImages.add(image);
                 }
             }
 
-            if (!images.isEmpty()) {
-                images.get(0).setPreviewImage(true);
-                advertisement.setImageList(images);
+            if (!newImages.isEmpty()) {
+                newImages.getFirst().setPreviewImage(true);
+                advertisement.setImageList(newImages);
             }
         }
 
         Advertisement savedAd = advertisementRepository.save(advertisement);
 
         AdvertisementDTO dto = advertisementMapper.advertisementToDTO(savedAd);
-
         AdminAdvertisementDTO adminAdvertisementDTO = advertisementMapper.toAdminDto(savedAd, AdvertisementEventType.ADVERTISEMENT_UPDATED);
+
+        sendCacheService.updateCacheAsync(dto);
+        sendAdminService.updateAdminAsync(adminAdvertisementDTO);
+
+        return dto;
+    }
+
+
+    @Transactional
+    public AdvertisementDTO updateAdvertisementFields(Long advertisementId, AdvertisementDTO advertisementDTO) {
+        Advertisement advertisement = advertisementRepository.findById(advertisementId)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
+
+        if (advertisementDTO.getSubCategoryId() != null) {
+            SubCategory subCategory = subCategoryRepository.findById(advertisementDTO.getSubCategoryId())
+                    .orElseThrow(() -> new EntityNotFoundException("Подкатегория не найдена"));
+            advertisement.setSubcategory(subCategory);
+        }
+
+        if (advertisementDTO.getTitle() != null) {
+            advertisement.setTitle(advertisementDTO.getTitle());
+        }
+
+        if (advertisementDTO.getDescription() != null) {
+            advertisement.setDescription(advertisementDTO.getDescription());
+        }
+
+        if (advertisementDTO.getOwnerId() != null) {
+            advertisement.setOwnerId(advertisementDTO.getOwnerId());
+        }
+
+        Advertisement savedAd = advertisementRepository.save(advertisement);
+
+        AdvertisementDTO dto = advertisementMapper.advertisementToDTO(savedAd);
+        AdminAdvertisementDTO adminAdvertisementDTO =
+                advertisementMapper.toAdminDto(savedAd, AdvertisementEventType.ADVERTISEMENT_UPDATED);
+
+        sendCacheService.updateCacheAsync(dto);
+        sendAdminService.updateAdminAsync(adminAdvertisementDTO);
+
+        return dto;
+    }
+
+    @Transactional
+    public AdvertisementDTO updateAdvertisementImages(Long advertisementID, List<MultipartFile> files) throws IOException {
+
+        Advertisement advertisement = advertisementRepository.findById(advertisementID)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
+
+        List<Image> oldImages = advertisement.getImageList();
+        if (oldImages != null && !oldImages.isEmpty()) {
+            for (Image img : oldImages) {
+                imageService.deleteImageById(img.getId());
+            }
+            advertisement.getImageList().clear();
+        }
+
+        List<Image> newImages = new ArrayList<>();
+        for (MultipartFile file : files) {
+            Image image = imageService.createImage(file);
+            if (image != null) {
+                image.setAdvertisement(advertisement);
+                newImages.add(image);
+            }
+        }
+
+        if (!newImages.isEmpty()) {
+            newImages.getFirst().setPreviewImage(true);
+            advertisement.setImageList(newImages);
+        }
+
+        Advertisement savedAd = advertisementRepository.save(advertisement);
+
+        AdvertisementDTO dto = advertisementMapper.advertisementToDTO(savedAd);
+        AdminAdvertisementDTO adminAdvertisementDTO =
+                advertisementMapper.toAdminDto(savedAd, AdvertisementEventType.ADVERTISEMENT_UPDATED);
 
         sendCacheService.updateCacheAsync(dto);
         sendAdminService.updateAdminAsync(adminAdvertisementDTO);
@@ -208,21 +302,20 @@ public class AdvertisementService {
 
     @Transactional
     public void deleteAdvertisementById(Long advertisementID) throws JsonProcessingException {
-        if (advertisementRepository.existsById(advertisementID)) {
-            advertisementRepository.deleteById(advertisementID);
+        Advertisement advertisement = advertisementRepository.findById(advertisementID)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
 
-            AdminAdvertisementDTO adminAdvertisementDTO = new AdminAdvertisementDTO();
-            adminAdvertisementDTO.setId(advertisementID);
-            adminAdvertisementDTO.setEventType(AdvertisementEventType.ADVERTISEMENT_DELETED);
+        advertisementRepository.delete(advertisement);
 
-            String cacheKey = "advertisement:" + advertisementID;
-            redisCommands.del(cacheKey);
+        AdminAdvertisementDTO adminAdvertisementDTO = new AdminAdvertisementDTO();
+        adminAdvertisementDTO.setId(advertisementID);
+        adminAdvertisementDTO.setEventType(AdvertisementEventType.ADVERTISEMENT_DELETED);
 
-            System.out.println("Объявление и его кэш успешно удалены: " + advertisementID);
+        String cacheKey = "advertisement:" + advertisementID;
+        redisCommands.del(cacheKey);
 
-            sendAdminService.sendAdminRequest(objectMapper.writeValueAsString(adminAdvertisementDTO));
-        } else {
-            throw new EntityNotFoundException("Объявление не найдено");
-        }
+        System.out.println("Объявление и его кэш успешно удалены: " + advertisementID);
+
+        sendAdminService.sendAdminRequest(objectMapper.writeValueAsString(adminAdvertisementDTO));
     }
 }

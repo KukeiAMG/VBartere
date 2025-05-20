@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 @Entity
@@ -111,6 +114,17 @@ public class Image {
 
     public void setAdvertisement(Advertisement advertisement) {
         this.advertisement = advertisement;
+    }
+
+    @PreRemove
+    public void deleteFileFromDisk() {
+        if (filePath != null) {
+            try {
+                Files.deleteIfExists(Paths.get(filePath));
+            } catch (IOException e) {
+                System.err.println("Не удалось удалить файл изображения: " + filePath + " - " + e.getMessage());
+            }
+        }
     }
 
     @Override
