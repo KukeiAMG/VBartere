@@ -3,6 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>Chat Service</title>
+    <!-- 
+        ДОКУМЕНТАЦИЯ ПО ИСПОЛЬЗОВАНИЮ ЧАТ-СЕРВИСА
+        ===========================================
+        
+        1. АУТЕНТИФИКАЦИЯ
+        ----------------
+        - Сервис использует JWT токен для аутентификации
+        - Токен должен быть сохранен в localStorage под ключом 'jwtToken'
+        - Токен должен содержать поле 'id' с ID пользователя
+        
+        2. ОСНОВНЫЕ ФУНКЦИИ
+        -----------------
+        - Создание нового чата
+        - Отправка сообщений
+        - Просмотр истории сообщений
+        - Закрытие чата
+        
+        3. ИНТЕРФЕЙС
+        -----------
+        - Список чатов: отображает все активные чаты пользователя
+        - Окно чата: показывает сообщения и позволяет отправлять новые
+        - Статус подключения: показывает состояние соединения с сервером
+        
+        4. КОМАНДЫ
+        --------
+        - /app/chat.rooms - получение списка чатов
+        - /app/chat.room.create - создание нового чата
+        - /app/chat.send - отправка сообщения
+        - /app/chat.history - получение истории сообщений
+        
+        5. ПОДПИСКИ
+        ----------
+        - /user/queue/chat.rooms - получение обновлений списка чатов
+        - /topic/chat.{chatId} - получение сообщений конкретного чата
+        - /user/queue/chat.history - получение истории сообщений
+    -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
@@ -66,11 +102,92 @@
             background-color: #e8f5e9;
             color: #2e7d32;
         }
+        
+        /* Стили для кнопки документации */
+        .doc-toggle-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: background-color 0.3s;
+        }
+        
+        .doc-toggle-btn:hover {
+            background-color: #5a6268;
+        }
+        
+        /* Стили для документации */
+        .documentation {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+        
+        .documentation h3 {
+            color: #0d6efd;
+            margin-top: 20px;
+        }
+        
+        .documentation code {
+            background-color: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Чат сервис</h2>
+        
+        <!-- Кнопка для сворачивания/разворачивания документации -->
+        <button onclick="toggleDocumentation()" class="doc-toggle-btn">Показать/Скрыть руководство</button>
+        
+        <!-- Документация для пользователей -->
+        <div id="documentation" class="documentation" style="display: none;">
+            <h3>Руководство пользователя</h3>
+            
+            <h4>1. Начало работы</h4>
+            <p>Для начала работы с чатом необходимо:</p>
+            <ul>
+                <li>Иметь действующий JWT токен (должен быть сохранен в браузере)</li>
+                <li>Токен должен содержать ID пользователя</li>
+            </ul>
+            
+            <h4>2. Создание чата</h4>
+            <p>Чтобы создать новый чат:</p>
+            <ol>
+                <li>Введите ID пользователя, с которым хотите начать чат</li>
+                <li>Нажмите кнопку "Создать чат"</li>
+            </ol>
+            
+            <h4>3. Отправка сообщений</h4>
+            <p>Для отправки сообщения:</p>
+            <ol>
+                <li>Выберите чат из списка</li>
+                <li>Введите текст сообщения в поле ввода</li>
+                <li>Нажмите кнопку "Отправить" или клавишу Enter</li>
+            </ol>
+            
+            <h4>4. Просмотр истории</h4>
+            <p>История сообщений загружается автоматически при открытии чата.</p>
+            
+            <h4>5. Закрытие чата</h4>
+            <p>Чтобы закрыть текущий чат, нажмите кнопку "Закрыть чат".</p>
+            
+            <h4>6. Статус подключения</h4>
+            <p>В верхней части страницы отображается статус подключения к серверу:</p>
+            <ul>
+                <li>Зеленый - успешное подключение</li>
+                <li>Красный - ошибка подключения</li>
+            </ul>
+        </div>
+        
         <div id="status"></div>
         
         <!-- Основной интерфейс чата -->
@@ -98,6 +215,7 @@
         let currentChatId = null;
         let currentRecipientId = null;
         let messages = [];
+        let chatSubscription = null;
 
         // Функция для получения JWT токена из URL параметров
         function getTokenFromUrl() {
@@ -145,13 +263,6 @@
                         displayChats(chats);
                     });
                     stompClient.send("/app/chat.rooms", {});
-                    stompClient.subscribe('/user/queue/messages', function(response) {
-                        const msg = JSON.parse(response.body);
-                        if (msg.chatId === currentChatId) {
-                            messages.push(msg);
-                            displayMessages();
-                        }
-                    });
                 },
                 function(error) {
                     console.error('Connection error:', error);
@@ -200,6 +311,16 @@
 
             document.getElementById('chatWindow').classList.remove('hidden');
             loadChatHistory();
+
+            if (chatSubscription) {
+                chatSubscription.unsubscribe();
+                chatSubscription = null;
+            }
+            chatSubscription = stompClient.subscribe(`/topic/chat.${chatId}`, function(response) {
+                const msg = JSON.parse(response.body);
+                messages.push(msg);
+                displayMessages();
+            });
         }
 
         function closeChat() {
@@ -207,6 +328,9 @@
             currentChatId = null;
             currentRecipientId = null;
             messages = [];
+            if (chatSubscription) {
+                chatSubscription.unsubscribe();
+            }
         }
 
         function loadChatHistory() {
@@ -243,14 +367,17 @@
                 chatId: currentChatId
             };
             stompClient.send("/app/chat.send", {}, JSON.stringify(message));
-            messages.push({
-                sender: currentUser,
-                recipient: currentRecipientId,
-                content: text,
-                chatId: currentChatId
-            });
-            displayMessages();
             input.value = '';
+        }
+
+        // Функция для сворачивания/разворачивания документации
+        function toggleDocumentation() {
+            const doc = document.getElementById('documentation');
+            if (doc.style.display === 'none') {
+                doc.style.display = 'block';
+            } else {
+                doc.style.display = 'none';
+            }
         }
 
         // Инициализация при загрузке страницы

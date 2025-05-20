@@ -37,16 +37,19 @@ public class ChatService {
     private final UserService userService;
     private final Validator validator;
     private final ObjectMapper objectMapper;
+    private final ChatRoomService chatRoomService;
 
     public ChatService(ChatMessageRepository messageRepository,
                        SimpMessagingTemplate messagingTemplate,
                        KafkaTemplate<String, String> kafkaTemplate,
-                       UserService userService, ObjectMapper objectMapper) {
+                       UserService userService, ObjectMapper objectMapper, ChatRoomService chatRoomService) {
         this.messageRepository = messageRepository;
         this.messagingTemplate = messagingTemplate;
         this.kafkaTemplate = kafkaTemplate;
         this.userService = userService;
         this.objectMapper = objectMapper;
+        this.chatRoomService = chatRoomService;
+
 
         // Инициализация валидатора
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
@@ -92,21 +95,11 @@ public class ChatService {
             // Сохраняем сообщение в БД
             messageRepository.save(message);
 
-            // Отправляем сообщение получателю через WebSocket
-            messagingTemplate.convertAndSendToUser(
-                message.getRecipient().toString(),
-                "/queue/messages",
+            // Отправляем сообщение через WebSocket
+            messagingTemplate.convertAndSend(
+                "/topic/chat." + message.getChatId(),
                 message
             );
-
-            // Отправляем сообщение отправителю (чтобы оно появилось у него сразу)
-            if (!message.getSender().equals(message.getRecipient())) {
-                messagingTemplate.convertAndSendToUser(
-                    message.getSender().toString(),
-                    "/queue/messages",
-                    message
-                );
-            }
 
             // Публикуем событие в Kafka
             kafkaTemplate.send("chat.messages", objectMapper.writeValueAsString(message));

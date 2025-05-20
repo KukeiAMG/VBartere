@@ -21,6 +21,8 @@ public class ChatMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long chatId;
+
     @NotNull(message = "Sender ID cannot be null")
     @Column(nullable = false)
     private Long sender;
@@ -40,6 +42,15 @@ public class ChatMessage {
 
     public ChatMessage() {
     }
+
+    public Long getChatId() {
+        return chatId;
+    }
+    
+    public void setChatId(Long chatId) {
+        this.chatId = chatId;
+    }
+
 
     public Long getId() {
         return id;

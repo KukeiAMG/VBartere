@@ -4,6 +4,7 @@ import com.example.ChatService.model.ChatMessage;
 import com.example.ChatService.service.ChatService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
@@ -14,9 +15,14 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
+    private final SimpMessagingTemplate messagingTemplate; // Добавлено
 
-    public ChatController(ChatService chatService) {
+    public ChatController(
+            ChatService chatService,
+            SimpMessagingTemplate messagingTemplate // Внедрите зависимость
+    ) {
         this.chatService = chatService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @MessageMapping("/chat.send")
@@ -24,7 +30,10 @@ public class ChatController {
         try {
             Long senderId = Long.parseLong(principal.getName());
             message.setSender(senderId);
+
+            // Сохраняем сообщение
             chatService.sendMessage(message);
+
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid sender ID format");
         }
