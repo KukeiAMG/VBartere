@@ -81,7 +81,7 @@ public class ChatService {
 
             // Проверяем существование получателя
             if (!userService.userExists(message.getRecipient())) {
-                logger.error("ChatService---Recipient {} does not exist", message.getRecipient());
+                logger.error("ChatService---Recipient with ID {} does not exist", message.getRecipient());
                 throw new IllegalArgumentException("Recipient does not exist");
             }
 
@@ -90,7 +90,7 @@ public class ChatService {
 
             // Отправляем сообщение получателю через WebSocket
             messagingTemplate.convertAndSendToUser(
-                message.getRecipient(),
+                message.getRecipient().toString(),
                 "/queue/messages",
                 message
             );
@@ -98,7 +98,7 @@ public class ChatService {
             // Публикуем событие в Kafka
             kafkaTemplate.send("chat.messages", objectMapper.writeValueAsString(message));
             
-            logger.info("ChatService---Message sent successfully from {} to {}",
+            logger.info("ChatService---Message sent successfully from user {} to user {}",
                     message.getSender(), message.getRecipient());
         } catch (Exception e) {
             logger.error("ChatService---Error sending message: {}", e.getMessage());
@@ -109,12 +109,12 @@ public class ChatService {
      * Получает историю сообщений между двумя пользователями.
      * Сообщения возвращаются в хронологическом порядке.
      * 
-     * @param user1 первый пользователь
-     * @param user2 второй пользователь
+     * @param user1Id ID первого пользователя
+     * @param user2Id ID второго пользователя
      * @return список сообщений между пользователями
      */
-    public List<ChatMessage> getChatHistory(String user1, String user2) {
+    public List<ChatMessage> getChatHistory(Long user1Id, Long user2Id) {
         return messageRepository.findBySenderAndRecipientOrRecipientAndSenderOrderByTimestampAsc(
-            user1, user2, user1, user2);
+            user1Id, user2Id, user1Id, user2Id);
     }
 } 

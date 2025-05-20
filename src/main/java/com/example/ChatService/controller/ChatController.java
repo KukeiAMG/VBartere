@@ -21,12 +21,23 @@ public class ChatController {
 
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessage message, Principal principal) {
-        message.setSender(principal.getName());
-        chatService.sendMessage(message);
+        try {
+            Long senderId = Long.parseLong(principal.getName());
+            message.setSender(senderId);
+            chatService.sendMessage(message);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid sender ID format");
+        }
     }
 
     @SubscribeMapping("/chat.history")
     public List<ChatMessage> getChatHistory(Principal principal, String recipient) {
-        return chatService.getChatHistory(principal.getName(), recipient);
+        try {
+            Long senderId = Long.parseLong(principal.getName());
+            Long recipientId = Long.parseLong(recipient);
+            return chatService.getChatHistory(senderId, recipientId);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid user ID format");
+        }
     }
 } 

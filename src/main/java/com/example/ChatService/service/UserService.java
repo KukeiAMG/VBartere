@@ -1,5 +1,6 @@
 package com.example.ChatService.service;
 
+import com.example.ChatService.model.UserDetails;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -9,10 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Base64;
+import java.util.*;
 import java.security.Key;
 import io.jsonwebtoken.security.Keys;
 
@@ -31,38 +29,38 @@ public class UserService {
     private String jwtSecret;
 
     // Кэш активных пользователей
-    private final Set<String> activeUsers = new HashSet<>();
+    private final Set<Long> activeUsers = new HashSet<>();
 
     /**
      * Проверяет существование пользователя.
      * 
-     * @param username имя пользователя для проверки
+     * @param userId ID пользователя для проверки
      * @return true если пользователь существует, false в противном случае
      */
-    public boolean userExists(String username) {
-        return activeUsers.contains(username);
+    public boolean userExists(Long userId) {
+        return activeUsers.contains(userId);
     }
 
     /**
      * Добавляет пользователя в список активных.
      * Вызывается при успешной аутентификации через JWT.
      * 
-     * @param username имя пользователя
+     * @param userId ID пользователя
      */
-    public void addActiveUser(String username) {
-        activeUsers.add(username);
-        logger.info("UserService---User {} added to active users", username);
+    public void addActiveUser(Long userId) {
+        activeUsers.add(userId);
+        logger.info("UserService---User with ID {} added to active users", userId);
     }
 
     /**
      * Удаляет пользователя из списка активных.
      * Вызывается при отключении пользователя.
      * 
-     * @param username имя пользователя
+     * @param userId ID пользователя
      */
-    public void removeActiveUser(String username) {
-        activeUsers.remove(username);
-        logger.info("UserService---User {} removed from active users", username);
+    public void removeActiveUser(Long userId) {
+        activeUsers.remove(userId);
+        logger.info("UserService---User with ID {} removed from active users", userId);
     }
 
     /**
@@ -77,7 +75,7 @@ public class UserService {
      * @throws IllegalArgumentException если токен невалиден
      * @throws TokenExpiredException если срок действия токена истек
      */
-    public String validateTokenAndGetUsername(String token) {
+    public UserDetails validateTokenAndGetUsername(String token) {
         try {
             
             Key key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
@@ -88,10 +86,24 @@ public class UserService {
                     .getBody();
 
             // Проверяем наличие имени пользователя
-            String username = claims.getSubject();
-            System.out.println(username);
-            if (username == null || username.isEmpty()) {
-                throw new IllegalArgumentException("UserService---Invalid token: username is empty");
+            UserDetails userDetails = new UserDetails();
+
+            userDetails.setUserId(claims.get("id", Long.class));
+            userDetails.setPhoneNumber(claims.get("phoneNumber", String.class));
+            userDetails.setRoles((List<Map<String, Object>>) claims.get("roles"));
+
+            // валидация полей
+            System.out.println(userDetails.toString());
+            if (userDetails.getUserId() == null) {
+                throw new IllegalArgumentException("UserService---Invalid token: UserId is null");
+            }
+
+            if (userDetails.getPhoneNumber() == null || userDetails.getPhoneNumber().isEmpty()) {
+                throw new IllegalArgumentException("UserService---Invalid token: phonenumber is null or empty");
+            }
+
+            if (userDetails.getRoles() == null || userDetails.getRoles().isEmpty()) {
+                throw new IllegalArgumentException("UserService---Invalid token: role is null or empty");
             }
 
             // Проверяем срок действия токена
@@ -101,11 +113,11 @@ public class UserService {
             }
 
             if (expiration.before(new Date())) {
-                logger.warn("UserService---Token expired for user {} at {}", username, expiration);
+                logger.warn("UserService---Token expired for user {} at {}", userDetails.getUserId(), expiration);
                 throw new TokenExpiredException("Token has expired");
             }
 
-            return username;
+            return userDetails;
         } catch (ExpiredJwtException e) {
             logger.warn("UserService---Token expired: {}", e.getMessage());
             throw new TokenExpiredException("Token has expired");

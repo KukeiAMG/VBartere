@@ -13,13 +13,13 @@ public class ChatRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "First user ID cannot be empty")
+    @NotNull(message = "First user ID cannot be null")
     @Column(name = "user1_id", nullable = false)
-    private String user1Id;
+    private Long user1Id;
 
-    @NotBlank(message = "Second user ID cannot be empty")
+    @NotNull(message = "Second user ID cannot be null")
     @Column(name = "user2_id", nullable = false)
-    private String user2Id;
+    private Long user2Id;
 
     @NotNull(message = "Room status cannot be null")
     @Enumerated(EnumType.STRING)
@@ -47,19 +47,19 @@ public class ChatRoom {
         this.id = id;
     }
 
-    public String getUser1Id() {
+    public Long getUser1Id() {
         return user1Id;
     }
 
-    public void setUser1Id(String user1Id) {
+    public void setUser1Id(Long user1Id) {
         this.user1Id = user1Id;
     }
 
-    public String getUser2Id() {
+    public Long getUser2Id() {
         return user2Id;
     }
 
-    public void setUser2Id(String user2Id) {
+    public void setUser2Id(Long user2Id) {
         this.user2Id = user2Id;
     }
 

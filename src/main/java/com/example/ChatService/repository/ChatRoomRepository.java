@@ -17,14 +17,14 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
            "((cr.user1Id = :user1Id AND cr.user2Id = :user2Id) OR " +
            "(cr.user1Id = :user2Id AND cr.user2Id = :user1Id)) AND " +
            "cr.status = 'ACTIVE'")
-    Optional<ChatRoom> findChatRoomBetweenUsers(@Param("user1Id") String user1Id, @Param("user2Id") String user2Id);
+    Optional<ChatRoom> findChatRoomBetweenUsers(@Param("user1Id") Long user1Id, @Param("user2Id") Long user2Id);
     
     @Query("SELECT cr FROM ChatRoom cr WHERE " +
            "(cr.user1Id = :userId OR cr.user2Id = :userId) AND " +
            "cr.status = :status")
-    List<ChatRoom> findUserChatRooms(@Param("userId") String userId, @Param("status") ChatRoomStatus status);
+    List<ChatRoom> findUserChatRooms(@Param("userId") Long userId, @Param("status") ChatRoomStatus status);
     
     @Query("SELECT CASE WHEN COUNT(cr) > 0 THEN true ELSE false END FROM ChatRoom cr " +
            "WHERE cr.id = :roomId AND (cr.user1Id = :userId OR cr.user2Id = :userId)")
-    boolean existsByIdAndUserId(@Param("roomId") Long roomId, @Param("userId") String userId);
+    boolean existsByIdAndUserId(@Param("roomId") Long roomId, @Param("userId") Long userId);
 } 

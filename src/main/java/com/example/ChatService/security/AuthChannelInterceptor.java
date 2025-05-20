@@ -1,5 +1,6 @@
 package com.example.ChatService.security;
 
+import com.example.ChatService.model.UserDetails;
 import com.example.ChatService.service.UserService;
 import com.example.ChatService.service.UserService.TokenExpiredException;
 import org.slf4j.Logger;
@@ -55,17 +56,17 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
             }
 
             try {
-                String username = userService.validateTokenAndGetUsername(token);
-                userService.addActiveUser(username);
+                UserDetails userDetails = userService.validateTokenAndGetUsername(token);
+                userService.addActiveUser(userDetails.getUserId());
                 
                 accessor.setUser(new java.security.Principal() {
                     @Override
                     public String getName() {
-                        return username;
+                        return userDetails.getUserId().toString();
                     }
                 });
                 
-                logger.info("AuthChannelInterceptor---User {} authenticated successfully", username);
+                logger.info("AuthChannelInterceptor---User with ID {} authenticated successfully", userDetails.getUserId());
             } catch (TokenExpiredException e) {
                 logger.warn("AuthChannelInterceptor---Token expired: {}", e.getMessage());
                 accessor.setHeader("token-expired", true);
@@ -76,7 +77,12 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
             }
         } else if (StompCommand.DISCONNECT.equals(accessor.getCommand())) {
             if (accessor.getUser() != null) {
-                userService.removeActiveUser(accessor.getUser().getName());
+                try {
+                    Long userId = Long.parseLong(accessor.getUser().getName());
+                    userService.removeActiveUser(userId);
+                } catch (NumberFormatException e) {
+                    logger.error("AuthChannelInterceptor---Invalid user ID format: {}", accessor.getUser().getName());
+                }
             }
         }
         return message;

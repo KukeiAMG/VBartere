@@ -21,15 +21,13 @@ public class ChatMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Sender cannot be empty")
-    @Size(min = 3, max = 50, message = "Sender name must be between 3 and 50 characters")
-    @Column(nullable = false, length = 50)
-    private String sender;
+    @NotNull(message = "Sender ID cannot be null")
+    @Column(nullable = false)
+    private Long sender;
 
-    @NotBlank(message = "Recipient cannot be empty")
-    @Size(min = 3, max = 50, message = "Recipient name must be between 3 and 50 characters")
-    @Column(nullable = false, length = 50)
-    private String recipient;
+    @NotNull(message = "Recipient ID cannot be null")
+    @Column(nullable = false)
+    private Long recipient;
 
     @NotBlank(message = "Message content cannot be empty")
     @Size(min = 1, max = 4000, message = "Message content must be between 1 and 4000 characters")
@@ -51,19 +49,19 @@ public class ChatMessage {
         this.id = id;
     }
 
-    public String getSender() {
+    public Long getSender() {
         return sender;
     }
 
-    public void setSender(String sender) {
+    public void setSender(Long sender) {
         this.sender = sender;
     }
 
-    public String getRecipient() {
+    public Long getRecipient() {
         return recipient;
     }
 
-    public void setRecipient(String recipient) {
+    public void setRecipient(Long recipient) {
         this.recipient = recipient;
     }
 

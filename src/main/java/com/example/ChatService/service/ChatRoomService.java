@@ -42,12 +42,11 @@ public class ChatRoomService {
     }
     
     @Transactional
-    public ChatRoom createChatRoom(String user1Id, String user2Id) {
+    public ChatRoom createChatRoom(Long user1Id, Long user2Id) {
         // Проверяем существование пользователей
         if (!userService.userExists(user1Id) || !userService.userExists(user2Id)) {
-            System.out.println("createChatRoom---" + user1Id);
-            System.out.println("createChatRoom---" +user2Id);
-            throw new IllegalArgumentException("ChatRoomService---One or both users do not exist");
+            logger.error("ChatRoomService---One or both users do not exist. User1: {}, User2: {}", user1Id, user2Id);
+            throw new IllegalArgumentException("One or both users do not exist");
         }
         
         // Проверяем, не существует ли уже чат между этими пользователями
@@ -62,7 +61,7 @@ public class ChatRoomService {
     }
     
     @Transactional
-    public void deleteChatRoom(Long roomId, String userId) throws JsonProcessingException {
+    public void deleteChatRoom(Long roomId, Long userId) throws JsonProcessingException {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Chat room not found"));
         
@@ -74,23 +73,21 @@ public class ChatRoomService {
         room.setStatus(ChatRoomStatus.DELETED);
         chatRoomRepository.save(room);
 
-
-        ChatRoomCreatedEvent chatRoomCreatedEvent = new ChatRoomCreatedEvent(room);
+        ChatRoomDeletedEvent chatRoomDeletedEvent = new ChatRoomDeletedEvent(room);
         // Отправляем уведомление об удалении чата
-        kafkaTemplate.send("chat.notifications", objectMapper.writeValueAsString(chatRoomCreatedEvent));
+        kafkaTemplate.send("chat.notifications", objectMapper.writeValueAsString(chatRoomDeletedEvent));
     }
     
-    public List<ChatRoom> getUserChatRooms(String userId) {
+    public List<ChatRoom> getUserChatRooms(Long userId) {
         return chatRoomRepository.findUserChatRooms(userId, ChatRoomStatus.ACTIVE);
     }
     
-    private ChatRoom createNewChatRoom(String user1Id, String user2Id) throws JsonProcessingException {
+    private ChatRoom createNewChatRoom(Long user1Id, Long user2Id) throws JsonProcessingException {
         ChatRoom chatRoom = new ChatRoom();
         chatRoom.setUser1Id(user1Id);
         chatRoom.setUser2Id(user2Id);
         
         // Валидация
-        
         Set<ConstraintViolation<ChatRoom>> violations = validator.validate(chatRoom);
         if (!violations.isEmpty()) {
             throw new IllegalArgumentException("Invalid chat room data: " + violations);
@@ -108,8 +105,8 @@ public class ChatRoomService {
     // Вспомогательные классы для событий
     private static class ChatRoomCreatedEvent {
         private final Long roomId;
-        private final String user1Id;
-        private final String user2Id;
+        private final Long user1Id;
+        private final Long user2Id;
         
         public ChatRoomCreatedEvent(ChatRoom room) {
             this.roomId = room.getId();
@@ -119,14 +116,14 @@ public class ChatRoomService {
         
         // Getters
         public Long getRoomId() { return roomId; }
-        public String getUser1Id() { return user1Id; }
-        public String getUser2Id() { return user2Id; }
+        public Long getUser1Id() { return user1Id; }
+        public Long getUser2Id() { return user2Id; }
     }
     
     private static class ChatRoomDeletedEvent {
         private final Long roomId;
-        private final String user1Id;
-        private final String user2Id;
+        private final Long user1Id;
+        private final Long user2Id;
         
         public ChatRoomDeletedEvent(ChatRoom room) {
             this.roomId = room.getId();
@@ -136,7 +133,7 @@ public class ChatRoomService {
         
         // Getters
         public Long getRoomId() { return roomId; }
-        public String getUser1Id() { return user1Id; }
-        public String getUser2Id() { return user2Id; }
+        public Long getUser1Id() { return user1Id; }
+        public Long getUser2Id() { return user2Id; }
     }
 } 
