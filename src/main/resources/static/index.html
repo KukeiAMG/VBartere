@@ -180,6 +180,40 @@
             background-color: #331a1a;
             color: #ffaaaa;
         }
+
+        .chat-menu {
+            background: #fff;
+            color: #222;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 8px 0;
+            z-index: 100;
+        }
+        .chat-menu button {
+            display: block;
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            text-align: left;
+            cursor: pointer;
+            color: #222;
+        }
+        .chat-menu button:hover {
+            background: #f5f5f5;
+        }
+        body.dark-theme .chat-menu {
+            background: #33373a;
+            color: #fff;
+            border-color: #444;
+        }
+        body.dark-theme .chat-menu button:hover {
+            background: #444950;
+        }
+        body.dark-theme .chat-menu button {
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -253,12 +287,13 @@
             <div id="chatList" class="chat-list"></div>
             <div id="chatWindow" class="hidden">
                 <div id="messagesList" class="chat-list"></div>
-                <div class="create-message">
-                    <input type="text" id="messageInput" placeholder="Введите сообщение">
-                    <button onclick="sendMessage()">Отправить</button>
-                    <button onclick="clearChat()" style="background-color: #dc3545;">Очистить чат</button>
+                <div class="create-message" style="display: flex; gap: 8px;">
+                    <input type="text" id="messageInput" placeholder="Введите сообщение" style="flex: 1;">
+                    <button id="sendBtn" title="Отправить" style="padding: 0 16px;">
+                        <!-- SVG стрелка вверх -->
+                        <svg width="20" height="20" viewBox="0 0 20 20"><path d="M10 3l5 7h-3v7h-4v-7H5l5-7z" fill="currentColor"/></svg>
+                    </button>
                 </div>
-                <button onclick="closeChat()">Закрыть чат</button>
             </div>
         </div>
     </div>
@@ -415,8 +450,33 @@
                 const otherUserId = chat.user1Id === currentUser ? chat.user2Id : chat.user1Id;
                 const chatElement = document.createElement('div');
                 chatElement.className = 'chat-item';
-                chatElement.textContent = `Чат с пользователем: ${otherUserId}`;
-                chatElement.onclick = () => openChat(chat.id);
+                chatElement.style.display = 'flex';
+                chatElement.style.justifyContent = 'space-between';
+                chatElement.style.alignItems = 'center';
+
+                // Левая часть — название чата (сюда обработчик открытия чата)
+                const chatLabel = document.createElement('span');
+                chatLabel.textContent = `Чат с пользователем: ${otherUserId}`;
+                chatLabel.style.flex = '1';
+                chatLabel.style.cursor = 'pointer';
+                chatLabel.onclick = () => openChat(chat.id);
+
+                // Правая часть — кнопка корзины
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.title = 'Меню чата';
+                deleteBtn.style.background = 'none';
+                deleteBtn.style.border = 'none';
+                deleteBtn.style.color = '#b71c1c';
+                deleteBtn.style.fontSize = '20px';
+                deleteBtn.style.cursor = 'pointer';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation(); // <-- Важно!
+                    openChatMenu(chat.id, e);
+                };
+
+                chatElement.appendChild(chatLabel);
+                chatElement.appendChild(deleteBtn);
                 chatList.appendChild(chatElement);
             });
         }
@@ -451,6 +511,15 @@
             }
             chatSubscription = stompClient.subscribe(`/topic/chat.${chatId}`, function(response) {
                 const msg = JSON.parse(response.body);
+
+                // Если это событие очистки чата
+                if (msg.type === "CLEAR_CHAT" && msg.chatId === currentChatId) {
+                    messages = [];
+                    displayMessages();
+                    return;
+                }
+
+                // Обычное сообщение
                 messages.push(msg);
                 displayMessages();
             });
@@ -566,7 +635,7 @@
         }
 
         /**
-         * clearChat()
+         * clearChat(chatId)
          * ---------------
          * Назначение: Очищает историю сообщений в текущем чате.
          * Алгоритм:
@@ -574,17 +643,109 @@
          *   2. Показывает confirm-диалог.
          *   3. Если подтверждено — отправляет команду на сервер через /app/chat.clear.
          *   4. Очищает локальный массив сообщений и обновляет DOM.
-         * Принимает: ничего (использует currentChatId).
+         * Принимает: chatId (ID чата).
          * Отдаёт: серверу chatId (STOMP send).
          */
-        function clearChat() {
-            if (!currentChatId) return;
-            
+        function clearChat(chatId) {
+            if (!chatId) return;
             if (confirm('Вы уверены, что хотите очистить историю чата?')) {
-                stompClient.send("/app/chat.clear", {}, currentChatId.toString());
-                messages = [];
-                displayMessages();
+                stompClient.send("/app/chat.clear", {}, chatId.toString());
+                if (currentChatId === chatId) {
+                    messages = [];
+                    displayMessages();
+                }
             }
+        }
+
+        /**
+         * deleteChatCompletely(chatId)
+         * ---------------
+         * Назначение: Удаляет чат и все сообщения в нём.
+         * Алгоритм:
+         *   1. Проверяет, выбран ли чат.
+         *   2. Показывает confirm-диалог.
+         *   3. Если подтверждено — отправляет команду на сервер через /app/chat.room.delete.
+         *   4. Очищает локальный массив сообщений и обновляет DOM.
+         * Принимает: chatId (ID чата).
+         * Отдаёт: серверу chatId (STOMP send).
+         */
+        function deleteChatCompletely(chatId) {
+            if (!chatId) return;
+            if (confirm('Вы уверены, что хотите полностью удалить этот чат и все сообщения?')) {
+                // Удаляем чат на сервере
+                stompClient.send("/app/chat.room.delete", {}, chatId.toString());
+
+                // Моментально удаляем чат из списка на фронте
+                if (window.lastChatsList) {
+                    window.lastChatsList = window.lastChatsList.filter(c => c.id !== chatId);
+                    displayChats(window.lastChatsList);
+                }
+
+                // Если открыт этот чат — закрываем окно
+                if (currentChatId === chatId) {
+                    closeChat();
+                }
+            }
+        }
+
+        /**
+         * openChatMenu(chatId, event)
+         * ---------------
+         * Назначение: Открывает popup-меню для выбранного чата.
+         * Алгоритм:
+         *   1. Удаляет старые меню, если есть.
+         *   2. Создаёт новое меню.
+         *   3. Добавляет кнопки "Удалить чат" и "Очистить чат".
+         *   4. Добавляет меню на страницу.
+         *   5. Закрывает меню при клике вне его.
+         *   6. Останавливает всплытие, чтобы не открывался чат.
+         * Принимает: chatId (ID чата), event (событие клика).
+         * Отдаёт: ничего (обновляет DOM).
+         */
+        function openChatMenu(chatId, event) {
+            // Удаляем старые меню, если есть
+            document.querySelectorAll('.chat-menu').forEach(menu => menu.remove());
+
+            // Создаём popup-меню
+            const menu = document.createElement('div');
+            menu.className = 'chat-menu';
+            menu.style.position = 'absolute';
+            menu.style.top = (event.clientY + window.scrollY) + 'px';
+            menu.style.left = (event.clientX + window.scrollX - 120) + 'px'; // немного левее от курсора
+
+            // Кнопка "Удалить чат"
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Удалить чат';
+            deleteBtn.onclick = () => {
+                deleteChatCompletely(chatId);
+                menu.remove();
+            };
+
+            // Кнопка "Очистить чат"
+            const clearBtn = document.createElement('button');
+            clearBtn.textContent = 'Очистить чат';
+            clearBtn.onclick = () => {
+                clearChat(chatId);
+                menu.remove();
+            };
+
+            menu.appendChild(deleteBtn);
+            menu.appendChild(clearBtn);
+
+            document.body.appendChild(menu);
+
+            // Закрытие меню при клике вне его
+            setTimeout(() => {
+                document.addEventListener('click', function handler(e) {
+                    if (!menu.contains(e.target)) {
+                        menu.remove();
+                        document.removeEventListener('click', handler);
+                    }
+                });
+            }, 0);
+
+            // Остановить всплытие, чтобы не открывался чат
+            event.stopPropagation();
         }
 
         /**
@@ -642,6 +803,14 @@
 
         // Установить правильную иконку при загрузке страницы
         updateThemeIcon();
+
+        // Привязка кнопки-стрелки к отправке сообщения
+        document.getElementById('sendBtn').onclick = sendMessage;
+
+        // Отправка по Enter
+        document.getElementById('messageInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
     </script>
 </body>
 </html>

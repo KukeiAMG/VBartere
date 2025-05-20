@@ -2,6 +2,7 @@ package com.example.ChatService.service;
 
 import com.example.ChatService.model.ChatRoom;
 import com.example.ChatService.model.ChatRoomStatus;
+import com.example.ChatService.repository.ChatMessageRepository;
 import com.example.ChatService.repository.ChatRoomRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,14 +29,16 @@ public class ChatRoomService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final Validator validator;
+    private final ChatMessageRepository chatMessageRepository;
     
     public ChatRoomService(ChatRoomRepository chatRoomRepository,
                            UserService userService,
-                           KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
+                           KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper, ChatMessageRepository chatMessageRepository) {
         this.chatRoomRepository = chatRoomRepository;
         this.userService = userService;
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
+        this.chatMessageRepository = chatMessageRepository;
 
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         this.validator = factory.getValidator();
@@ -86,6 +89,12 @@ public class ChatRoomService {
         ChatRoomDeletedEvent chatRoomDeletedEvent = new ChatRoomDeletedEvent(room);
         // Отправляем уведомление об удалении чата
         kafkaTemplate.send("chat.notifications", objectMapper.writeValueAsString(chatRoomDeletedEvent));
+
+        // Удаляем все сообщения этого чата
+        chatMessageRepository.deleteByChatId(roomId);
+
+        // Удаляем саму комнату
+        chatRoomRepository.deleteById(roomId);
     }
     
     public List<ChatRoom> getUserChatRooms(Long userId) {
