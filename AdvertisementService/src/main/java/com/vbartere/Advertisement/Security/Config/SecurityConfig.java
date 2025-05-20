@@ -39,7 +39,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/advertisements/create").hasAuthority("ROLE_USER")
                         .requestMatchers(HttpMethod.PUT, "/api/advertisements/{id}/update").hasAuthority("ROLE_USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/advertisements/{id}/delete").hasAuthority("ROLE_USER")
-                        .requestMatchers("/images/**").hasRole("USER")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
