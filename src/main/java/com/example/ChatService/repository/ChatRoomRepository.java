@@ -1,18 +1,30 @@
 package com.example.ChatService.repository;
 
 import com.example.ChatService.model.ChatRoom;
+import com.example.ChatService.model.ChatRoomStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
-    // Найти чат-комнату по ID двух пользователей (порядок не важен)
-    Optional<ChatRoom> findByUser1IdAndUser2Id(String user1Id, String user2Id);
-    Optional<ChatRoom> findByUser2IdAndUser1Id(String user1Id, String user2Id);
-
-    // Найти все комнаты пользователя
-    List<ChatRoom> findByUser1IdOrUser2Id(String user1Id, String user2Id);
-}
+public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
+    
+    @Query("SELECT cr FROM ChatRoom cr WHERE " +
+           "((cr.user1Id = :user1Id AND cr.user2Id = :user2Id) OR " +
+           "(cr.user1Id = :user2Id AND cr.user2Id = :user1Id)) AND " +
+           "cr.status = 'ACTIVE'")
+    Optional<ChatRoom> findChatRoomBetweenUsers(@Param("user1Id") String user1Id, @Param("user2Id") String user2Id);
+    
+    @Query("SELECT cr FROM ChatRoom cr WHERE " +
+           "(cr.user1Id = :userId OR cr.user2Id = :userId) AND " +
+           "cr.status = :status")
+    List<ChatRoom> findUserChatRooms(@Param("userId") String userId, @Param("status") ChatRoomStatus status);
+    
+    @Query("SELECT CASE WHEN COUNT(cr) > 0 THEN true ELSE false END FROM ChatRoom cr " +
+           "WHERE cr.id = :roomId AND (cr.user1Id = :userId OR cr.user2Id = :userId)")
+    boolean existsByIdAndUserId(@Param("roomId") Long roomId, @Param("userId") String userId);
+} 

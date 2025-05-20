@@ -1,68 +1,46 @@
 package com.example.ChatService.model;
 
-import com.example.ChatService.DTO.ChatMessageDTO;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Column;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
-
-
 import java.time.LocalDateTime;
 
 /**
- * Сущность сообщения в чате.
- * Представляет собой отдельное сообщение, отправленное пользователем в чат-комнату.
+ * Сущность, представляющая сообщение в чате.
+ * Хранит информацию об отправителе, получателе, содержимом и времени отправки сообщения.
+ * 
+ * @author Your Name
+ * @version 1.0
  */
 @Entity
+@Table(name = "chat_messages")
 public class ChatMessage {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "ID чат-комнаты не может быть пустым")
-    @Column(nullable = false)
-    private String chatRoomId;
+    @NotBlank(message = "Sender cannot be empty")
+    @Size(min = 3, max = 50, message = "Sender name must be between 3 and 50 characters")
+    @Column(nullable = false, length = 50)
+    private String sender;
 
-    @NotBlank(message = "ID отправителя не может быть пустым")
-    @Column(nullable = false)
-    private String senderId;
+    @NotBlank(message = "Recipient cannot be empty")
+    @Size(min = 3, max = 50, message = "Recipient name must be between 3 and 50 characters")
+    @Column(nullable = false, length = 50)
+    private String recipient;
 
-    @Size(max = 2000, message = "Длина сообщения не может превышать 2000 символов")
-    @Column(length = 2000)
+    @NotBlank(message = "Message content cannot be empty")
+    @Size(min = 1, max = 4000, message = "Message content must be between 1 and 4000 characters")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @NotNull(message = "Timestamp cannot be null")
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
-    @Column(nullable = false)
-    private boolean isRead = false;  // По умолчанию сообщение не прочитано
-
     public ChatMessage() {
-    }
-
-    public ChatMessage(String chatRoomId, String senderId, String content, LocalDateTime timestamp, boolean isRead) {
-        this.chatRoomId = chatRoomId;
-        this.senderId = senderId;
-        this.content = content;
-        this.timestamp = timestamp;
-        this.isRead = isRead;
-    }
-
-    /**
-     * Конструктор для создания сообщения из DTO.
-     * По умолчанию сообщение помечается как непрочитанное.
-     */
-    public ChatMessage(ChatMessageDTO dto) {
-        this(dto.getChatRoomId(), 
-             dto.getSenderId(), 
-             dto.getContent(), 
-             LocalDateTime.now(),
-             false);
     }
 
     public Long getId() {
@@ -73,20 +51,20 @@ public class ChatMessage {
         this.id = id;
     }
 
-    public String getChatRoomId() {
-        return chatRoomId;
+    public String getSender() {
+        return sender;
     }
 
-    public void setChatRoomId(String chatRoomId) {
-        this.chatRoomId = chatRoomId;
+    public void setSender(String sender) {
+        this.sender = sender;
     }
 
-    public String getSenderId() {
-        return senderId;
+    public String getRecipient() {
+        return recipient;
     }
 
-    public void setSenderId(String senderId) {
-        this.senderId = senderId;
+    public void setRecipient(String recipient) {
+        this.recipient = recipient;
     }
 
     public String getContent() {
@@ -105,23 +83,8 @@ public class ChatMessage {
         this.timestamp = timestamp;
     }
 
-    public boolean isRead() {
-        return isRead;
+    @PrePersist
+    protected void onCreate() {
+        timestamp = LocalDateTime.now();
     }
-
-    public void setRead(boolean read) {
-        isRead = read;
-    }
-
-    @Override
-    public String toString() {
-        return "ChatMessage{" +
-                "id=" + id +
-                ", chatRoomId='" + chatRoomId + '\'' +
-                ", senderId='" + senderId + '\'' +
-                ", content='" + content + '\'' +
-                ", timestamp=" + timestamp +
-                ", isRead=" + isRead +
-                '}';
-    }
-}
+} 

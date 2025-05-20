@@ -1,55 +1,49 @@
 package com.example.ChatService.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Column;
-import jakarta.persistence.Table;
-import jakarta.persistence.Index;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
-/**
- * Сущность чат-комнаты.
- * Представляет собой приватную комнату для общения между двумя пользователями.
- * ID комнаты формируется как композиция ID пользователей в ChatRoomService
- */
 @Entity
-@Table(name = "chat_room", indexes = {
-    @Index(name = "idx_user1", columnList = "user1Id"),
-    @Index(name = "idx_user2", columnList = "user2Id")
-})
+@Table(name = "chat_rooms")
 public class ChatRoom {
     
     @Id
-    private String id;  // Формируется как "user1Id_user2Id" (отсортированные)
-    
-    @NotBlank
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotBlank(message = "First user ID cannot be empty")
+    @Column(name = "user1_id", nullable = false)
+    private String user1Id;
+
+    @NotBlank(message = "Second user ID cannot be empty")
+    @Column(name = "user2_id", nullable = false)
+    private String user2Id;
+
+    @NotNull(message = "Room status cannot be null")
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String user1Id;  // ID первого пользователя (из user-service)
-    
-    @NotBlank
-    @Column(nullable = false)
-    private String user2Id;  // ID второго пользователя
-    
+    private ChatRoomStatus status;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column
+    private LocalDateTime lastActivityAt;
+
     public ChatRoom() {
+        this.status = ChatRoomStatus.ACTIVE;
+        this.createdAt = LocalDateTime.now();
+        this.lastActivityAt = LocalDateTime.now();
     }
 
-    public ChatRoom(String id, String user1Id, String user2Id, LocalDateTime createdAt) {
-        this.id = id;
-        this.user1Id = user1Id;
-        this.user2Id = user2Id;
-        this.createdAt = createdAt;
-    }
-
-    public String getId() {
+    // Getters and Setters
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -69,6 +63,14 @@ public class ChatRoom {
         this.user2Id = user2Id;
     }
 
+    public ChatRoomStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ChatRoomStatus status) {
+        this.status = status;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -77,13 +79,23 @@ public class ChatRoom {
         this.createdAt = createdAt;
     }
 
-    @Override
-    public String toString() {
-        return "ChatRoom{" +
-                "id='" + id + '\'' +
-                ", user1Id='" + user1Id + '\'' +
-                ", user2Id='" + user2Id + '\'' +
-                ", createdAt=" + createdAt +
-                '}';
+    public LocalDateTime getLastActivityAt() {
+        return lastActivityAt;
     }
-}
+
+    public void setLastActivityAt(LocalDateTime lastActivityAt) {
+        this.lastActivityAt = lastActivityAt;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.lastActivityAt = LocalDateTime.now();
+    }
+
+    // Дополнительный метод валидации
+    public void validateUsers() {
+        if (user1Id != null && user2Id != null && user1Id.equals(user2Id)) {
+            throw new IllegalArgumentException("Cannot create chat room with the same user");
+        }
+    }
+} 
