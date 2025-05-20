@@ -1,0 +1,120 @@
+package com.example.ChatService.service;
+
+import com.example.ChatService.model.ChatMessage;
+import com.example.ChatService.repository.ChatMessageRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Сервис для обработки сообщений чата.
+ * Обеспечивает сохранение сообщений в базу данных, отправку через WebSocket
+ * и публикацию событий в Kafka.
+ * 
+ * @author Your Name
+ * @version 1.0
+ */
+@Service
+public class ChatService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
+
+    private final ChatMessageRepository messageRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final UserService userService;
+    private final Validator validator;
+    private final ObjectMapper objectMapper;
+
+    public ChatService(ChatMessageRepository messageRepository,
+                       SimpMessagingTemplate messagingTemplate,
+                       KafkaTemplate<String, String> kafkaTemplate,
+                       UserService userService, ObjectMapper objectMapper) {
+        this.messageRepository = messageRepository;
+        this.messagingTemplate = messagingTemplate;
+        this.kafkaTemplate = kafkaTemplate;
+        this.userService = userService;
+        this.objectMapper = objectMapper;
+
+        // Инициализация валидатора
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        this.validator = factory.getValidator();
+    }
+
+    /**
+     * Отправляет сообщение получателю.
+     * Процесс отправки включает:
+     * 1. Валидацию сообщения
+     * 2. Проверку существования получателя
+     * 3. Сохранение сообщения в базу данных
+     * 4. Отправку сообщения получателю через WebSocket
+     * 5. Публикацию события в Kafka
+     * 
+     * @param message сообщение для отправки
+     * @throws IllegalArgumentException если сообщение невалидно или получатель не существует
+     * @throws RuntimeException если произошла ошибка при отправке
+     */
+    @Transactional
+    public void sendMessage(ChatMessage message) {
+        try {
+            // Валидация сообщения
+            Set<ConstraintViolation<ChatMessage>> violations = validator.validate(message);
+            if (!violations.isEmpty()) {
+                StringBuilder errorMessage = new StringBuilder("ChatService---Message validation failed: ");
+                for (ConstraintViolation<ChatMessage> violation : violations) {
+                    errorMessage.append(violation.getMessage()).append("; ");
+                }
+                logger.error(errorMessage.toString());
+                throw new IllegalArgumentException(errorMessage.toString());
+            }
+
+            // Проверяем существование получателя
+            if (!userService.userExists(message.getRecipient())) {
+                logger.error("ChatService---Recipient {} does not exist", message.getRecipient());
+                throw new IllegalArgumentException("Recipient does not exist");
+            }
+
+            // Сохраняем сообщение в БД
+            messageRepository.save(message);
+
+            // Отправляем сообщение получателю через WebSocket
+            messagingTemplate.convertAndSendToUser(
+                message.getRecipient(),
+                "/queue/messages",
+                message
+            );
+
+            // Публикуем событие в Kafka
+            kafkaTemplate.send("chat.messages", objectMapper.writeValueAsString(message));
+            
+            logger.info("ChatService---Message sent successfully from {} to {}",
+                    message.getSender(), message.getRecipient());
+        } catch (Exception e) {
+            logger.error("ChatService---Error sending message: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Получает историю сообщений между двумя пользователями.
+     * Сообщения возвращаются в хронологическом порядке.
+     * 
+     * @param user1 первый пользователь
+     * @param user2 второй пользователь
+     * @return список сообщений между пользователями
+     */
+    public List<ChatMessage> getChatHistory(String user1, String user2) {
+        return messageRepository.findBySenderAndRecipientOrRecipientAndSenderOrderByTimestampAsc(
+            user1, user2, user1, user2);
+    }
+} 
