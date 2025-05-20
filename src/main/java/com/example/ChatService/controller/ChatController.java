@@ -4,7 +4,7 @@ import com.example.ChatService.model.ChatMessage;
 import com.example.ChatService.service.ChatService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.annotation.SubscribeMapping;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
@@ -30,8 +30,9 @@ public class ChatController {
         }
     }
 
-    @SubscribeMapping("/chat.history")
-    public List<ChatMessage> getChatHistory(Principal principal, String recipient) {
+    @MessageMapping("/chat.history")
+    @SendToUser("/queue/chat.history")
+    public List<ChatMessage> getChatHistory(Principal principal, @Payload String recipient) {
         try {
             Long senderId = Long.parseLong(principal.getName());
             Long recipientId = Long.parseLong(recipient);
@@ -40,4 +41,6 @@ public class ChatController {
             throw new IllegalArgumentException("Invalid user ID format");
         }
     }
+
+    
 } 

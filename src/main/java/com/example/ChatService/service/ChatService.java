@@ -14,6 +14,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -68,6 +69,9 @@ public class ChatService {
     @Transactional
     public void sendMessage(ChatMessage message) {
         try {
+            if (message.getTimestamp() == null) {
+                message.setTimestamp(LocalDateTime.now());
+            }
             // Валидация сообщения
             Set<ConstraintViolation<ChatMessage>> violations = validator.validate(message);
             if (!violations.isEmpty()) {
@@ -94,6 +98,15 @@ public class ChatService {
                 "/queue/messages",
                 message
             );
+
+            // Отправляем сообщение отправителю (чтобы оно появилось у него сразу)
+            if (!message.getSender().equals(message.getRecipient())) {
+                messagingTemplate.convertAndSendToUser(
+                    message.getSender().toString(),
+                    "/queue/messages",
+                    message
+                );
+            }
 
             // Публикуем событие в Kafka
             kafkaTemplate.send("chat.messages", objectMapper.writeValueAsString(message));

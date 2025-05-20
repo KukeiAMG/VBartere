@@ -80,6 +80,14 @@
                 <button onclick="createChat()">Создать чат</button>
             </div>
             <div id="chatList" class="chat-list"></div>
+            <div id="chatWindow" class="hidden">
+                <div id="messagesList" class="chat-list"></div>
+                <div class="create-message">
+                    <input type="text" id="messageInput" placeholder="Введите сообщение">
+                    <button onclick="sendMessage()">Отправить</button>
+                </div>
+                <button onclick="closeChat()">Закрыть чат</button>
+            </div>
         </div>
     </div>
 
@@ -87,6 +95,9 @@
         let stompClient = null;
         let currentUser = null;
         let jwtToken = null;
+        let currentChatId = null;
+        let currentRecipientId = null;
+        let messages = [];
 
         // Функция для получения JWT токена из URL параметров
         function getTokenFromUrl() {
@@ -134,6 +145,13 @@
                         displayChats(chats);
                     });
                     stompClient.send("/app/chat.rooms", {});
+                    stompClient.subscribe('/user/queue/messages', function(response) {
+                        const msg = JSON.parse(response.body);
+                        if (msg.chatId === currentChatId) {
+                            messages.push(msg);
+                            displayMessages();
+                        }
+                    });
                 },
                 function(error) {
                     console.error('Connection error:', error);
@@ -154,6 +172,7 @@
         }
 
         function displayChats(chats) {
+            window.lastChatsList = chats;
             const chatList = document.getElementById('chatList');
             chatList.innerHTML = '';
             
@@ -173,8 +192,65 @@
         }
 
         function openChat(chatId) {
-            // Здесь можно добавить логику открытия чата
-            console.log('Opening chat:', chatId);
+            currentChatId = chatId;
+            // Найдём recipientId по chatId из списка чатов
+            const chat = window.lastChatsList?.find(c => c.id === chatId);
+            if (!chat) return;
+            currentRecipientId = chat.user1Id === currentUser ? chat.user2Id : chat.user1Id;
+
+            document.getElementById('chatWindow').classList.remove('hidden');
+            loadChatHistory();
+        }
+
+        function closeChat() {
+            document.getElementById('chatWindow').classList.add('hidden');
+            currentChatId = null;
+            currentRecipientId = null;
+            messages = [];
+        }
+
+        function loadChatHistory() {
+            // Через STOMP подписку (если реализовано на бэке)
+            stompClient.subscribe('/user/queue/chat.history', function(response) {
+                messages = JSON.parse(response.body);
+                displayMessages();
+            });
+            stompClient.send("/app/chat.history", {}, currentRecipientId.toString());
+        }
+
+        function displayMessages() {
+            const messagesList = document.getElementById('messagesList');
+            messagesList.innerHTML = '';
+            if (messages.length === 0) {
+                messagesList.innerHTML = '<div class="chat-item">Нет сообщений</div>';
+                return;
+            }
+            messages.forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'chat-item';
+                msgDiv.textContent = (msg.sender === currentUser ? 'Вы: ' : 'Собеседник: ') + msg.content;
+                messagesList.appendChild(msgDiv);
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            const message = {
+                recipient: currentRecipientId,
+                content: text,
+                chatId: currentChatId
+            };
+            stompClient.send("/app/chat.send", {}, JSON.stringify(message));
+            messages.push({
+                sender: currentUser,
+                recipient: currentRecipientId,
+                content: text,
+                chatId: currentChatId
+            });
+            displayMessages();
+            input.value = '';
         }
 
         // Инициализация при загрузке страницы
@@ -188,6 +264,11 @@
                 return;
             }
 
+            const payload = parseJwt(jwtToken);
+            currentUser = payload.id;
+
+            console.log('-----------Current user:', currentUser);
+            
             connect();
         };
     </script>
