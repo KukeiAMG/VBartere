@@ -45,7 +45,9 @@ public class ChatRoomService {
     public ChatRoom createChatRoom(String user1Id, String user2Id) {
         // Проверяем существование пользователей
         if (!userService.userExists(user1Id) || !userService.userExists(user2Id)) {
-            throw new IllegalArgumentException("One or both users do not exist");
+            System.out.println("createChatRoom---" + user1Id);
+            System.out.println("createChatRoom---" +user2Id);
+            throw new IllegalArgumentException("ChatRoomService---One or both users do not exist");
         }
         
         // Проверяем, не существует ли уже чат между этими пользователями
