@@ -1,7 +1,9 @@
 package com.example.ChatService.service;
 
 import com.example.ChatService.model.ChatMessage;
+import com.example.ChatService.model.ChatRoom;
 import com.example.ChatService.repository.ChatMessageRepository;
+import com.example.ChatService.repository.ChatRoomRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -37,19 +40,24 @@ public class ChatService {
     private final UserService userService;
     private final Validator validator;
     private final ObjectMapper objectMapper;
-    private final ChatRoomService chatRoomService;
+    private final ChatRoomService chatRoomService;  
+    private final ChatRoomRepository chatRoomRepository;
 
     public ChatService(ChatMessageRepository messageRepository,
                        SimpMessagingTemplate messagingTemplate,
                        KafkaTemplate<String, String> kafkaTemplate,
-                       UserService userService, ObjectMapper objectMapper, ChatRoomService chatRoomService) {
+                       UserService userService, 
+                       ObjectMapper objectMapper, 
+                       ChatRoomService chatRoomService,
+                       ChatRoomRepository chatRoomRepository) 
+    {
         this.messageRepository = messageRepository;
         this.messagingTemplate = messagingTemplate;
         this.kafkaTemplate = kafkaTemplate;
         this.userService = userService;
         this.objectMapper = objectMapper;
         this.chatRoomService = chatRoomService;
-
+        this.chatRoomRepository = chatRoomRepository;
 
         // Инициализация валидатора
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
@@ -75,6 +83,23 @@ public class ChatService {
             if (message.getTimestamp() == null) {
                 message.setTimestamp(LocalDateTime.now());
             }
+            
+            // Добавим логирование для отладки
+            logger.info("ChatService---Attempting to send message from {} to {}", 
+                message.getSender(), message.getRecipient());
+                
+            // Проверяем существование отправителя
+            if (!userService.userExists(message.getSender())) {
+                logger.error("ChatService---Sender with ID {} does not exist", message.getSender());
+                throw new IllegalArgumentException("Sender does not exist");
+            }
+    
+            // Проверяем существование получателя
+            if (!userService.userExists(message.getRecipient())) {
+                logger.error("ChatService---Recipient with ID {} does not exist", message.getRecipient());
+                throw new IllegalArgumentException("Recipient does not exist");
+            }
+
             // Валидация сообщения
             Set<ConstraintViolation<ChatMessage>> violations = validator.validate(message);
             if (!violations.isEmpty()) {
@@ -110,6 +135,31 @@ public class ChatService {
             logger.error("ChatService---Error sending message: {}", e.getMessage());
         }
     }
+
+    /**
+     * Очищает историю сообщений в чате.
+     * 
+     * @param chatId ID чата для очистки
+     * @param userId ID пользователя, запрашивающего очистку
+     */
+    @Transactional
+    public void clearChatHistory(Long chatId, Long userId) {
+    // Получаем чат и проверяем, является ли пользователь его участником
+        ChatRoom chatRoom = chatRoomService.getChatRoomById(chatId);
+        if (chatRoom == null || !chatRoomService.isUserInChat(chatId, userId)) {
+          throw new IllegalArgumentException("Chat not found or user is not a participant");
+        }
+
+        // Удаляем все сообщения чата из базы данных
+        messageRepository.deleteByChatId(chatId);
+    
+        // Отправляем уведомление об очистке чата всем участникам
+        messagingTemplate.convertAndSend(
+            "/topic/chat." + chatId,
+            Map.of("type", "CLEAR_CHAT", "chatId", chatId)
+        );
+    }
+
 
     /**
      * Получает историю сообщений между двумя пользователями.

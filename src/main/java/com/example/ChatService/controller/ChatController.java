@@ -51,5 +51,13 @@ public class ChatController {
         }
     }
 
-    
+    @MessageMapping("/chat.clear")
+    public void clearChatHistory(@Payload Long chatId, Principal principal) {
+        try {
+            Long userId = Long.parseLong(principal.getName());
+            chatService.clearChatHistory(chatId, userId);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid user ID format");
+        }
+    }
 } 

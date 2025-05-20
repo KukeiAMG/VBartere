@@ -202,6 +202,7 @@
                 <div class="create-message">
                     <input type="text" id="messageInput" placeholder="Введите сообщение">
                     <button onclick="sendMessage()">Отправить</button>
+                    <button onclick="clearChat()" style="background-color: #dc3545;">Очистить чат</button>
                 </div>
                 <button onclick="closeChat()">Закрыть чат</button>
             </div>
@@ -217,13 +218,28 @@
         let messages = [];
         let chatSubscription = null;
 
-        // Функция для получения JWT токена из URL параметров
+        /**
+         * getTokenFromUrl()
+         * ---------------
+         * Назначение: Получает токен из URL-параметров (если используется).
+         * Принимает: ничего.
+         * Отдаёт: строку токена или null.
+         */
         function getTokenFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('token');
         }
 
-        // Функция для декодирования JWT токена
+        /**
+         * parseJwt(token)
+         * ---------------
+         * Назначение: Декодирует JWT токен для получения payload.
+         * Алгоритм:
+         *   1. Делит токен по точке, декодирует base64 payload.
+         *   2. Возвращает объект payload.
+         * Принимает: token (строка).
+         * Отдаёт: объект payload (или null при ошибке).
+         */
         function parseJwt(token) {
             try {
                 const base64Url = token.split('.')[1];
@@ -238,12 +254,36 @@
             }
         }
 
+        /**
+         * showStatus(message, isError)
+         * ---------------
+         * Назначение: Показывает статус (успех/ошибка) пользователю.
+         * Алгоритм:
+         *   1. Находит DOM-элемент статуса.
+         *   2. Устанавливает текст и класс (error/success).
+         * Принимает: message (строка), isError (булево).
+         * Отдаёт: ничего (обновляет DOM).
+         */
         function showStatus(message, isError = false) {
             const statusDiv = document.getElementById('status');
             statusDiv.textContent = message;
             statusDiv.className = isError ? 'error' : 'success';
         }
 
+        /**
+        * connect()
+        * ---------------
+        * Назначение: Устанавливает WebSocket/STOMP соединение с сервером, аутентифицирует пользователя по JWT.
+        * Алгоритм:
+        *   1. Создаёт SockJS-соединение с передачей токена в query string.
+        *   2. STOMP-клиент подключается с токеном в заголовке.
+        *   3. При успешном подключении подписывается на /user/queue/chat.rooms.
+        *   4. После подключения сразу запрашивает список чатов через /app/chat.rooms.
+        * Принимает: ничего (использует глобальные переменные jwtToken, currentUser).
+        * Отдаёт: ничего (но обновляет UI через displayChats).
+        * Получает данные: от сервера по WebSocket (STOMP).
+        * Отдаёт данные: серверу через STOMP (subscribe/send).
+        */
         function connect() {
             console.log('Attempting to connect...');
             console.log('Token:', jwtToken);
@@ -262,6 +302,11 @@
                         const chats = JSON.parse(response.body);
                         displayChats(chats);
                     });
+                    // Подписка на историю сообщений — только один раз!
+                    stompClient.subscribe('/user/queue/chat.history', function(response) {
+                        messages = JSON.parse(response.body);
+                        displayMessages();
+                    });
                     stompClient.send("/app/chat.rooms", {});
                 },
                 function(error) {
@@ -271,17 +316,49 @@
             );
         }
 
+        /**
+         * createChat()
+         * ---------------
+         * Назначение: Создаёт новый чат с другим пользователем.
+         * Алгоритм:
+         *   1. Получает ID пользователя из input.
+         *   2. Проверяет, что поле не пустое и не совпадает с текущим пользователем.
+         *   3. Отправляет команду на сервер через /app/chat.room.create.
+         *   4. Очищает поле ввода.
+         *   5. Запрашивает обновлённый список чатов через /app/chat.rooms.
+         * Принимает: ничего (использует DOM и currentUser).
+         * Отдаёт: серверу ID пользователя для создания чата (STOMP send).
+         * Получает данные: обновлённый список чатов через подписку.
+         */
         function createChat() {
             const targetUserId = document.getElementById('newChatUserId').value;
             if (!targetUserId) {
                 showStatus('Пожалуйста, введите ID пользователя', true);
                 return;
             }
+            if (parseInt(targetUserId) === currentUser) {
+                showStatus('Нельзя создать чат с самим собой', true);
+                return;
+            }
 
             stompClient.send("/app/chat.room.create", {}, targetUserId);
             document.getElementById('newChatUserId').value = '';
+            stompClient.send("/app/chat.rooms", {});
         }
 
+        /**
+         * displayChats(chats)
+         * ---------------
+         * Назначение: Отображает список чатов пользователя.
+         * Алгоритм:
+         *   1. Очищает текущий список чатов.
+         *   2. Если чатов нет — выводит сообщение.
+         *   3. Для каждого чата определяет собеседника (не текущий пользователь).
+         *   4. Создаёт элемент списка, добавляет обработчик клика (openChat).
+         * Принимает: массив чатов (от сервера).
+         * Отдаёт: ничего (обновляет DOM).
+         * Получает данные: из подписки на /user/queue/chat.rooms.
+         */
         function displayChats(chats) {
             window.lastChatsList = chats;
             const chatList = document.getElementById('chatList');
@@ -302,6 +379,20 @@
             });
         }
 
+        /**
+         * openChat(chatId)
+         * ---------------
+         * Назначение: Открывает окно выбранного чата, подписывается на сообщения этого чата.
+         * Алгоритм:
+         *   1. Сохраняет текущий chatId и определяет recipientId.
+         *   2. Показывает окно чата.
+         *   3. Загружает историю сообщений (loadChatHistory).
+         *   4. Отписывается от предыдущего чата, если был.
+         *   5. Подписывается на /topic/chat.{chatId} для получения новых сообщений.
+         * Принимает: chatId (ID чата).
+         * Отдаёт: ничего (обновляет DOM, подписывается на WebSocket).
+         * Получает данные: сообщения чата (от сервера по WebSocket).
+        */
         function openChat(chatId) {
             currentChatId = chatId;
             // Найдём recipientId по chatId из списка чатов
@@ -323,6 +414,17 @@
             });
         }
 
+        /**
+         * closeChat()
+         * ---------------
+         * Назначение: Закрывает окно чата, сбрасывает текущие переменные и отписывается от сообщений.
+         * Алгоритм:
+         *   1. Скрывает окно чата.
+         *   2. Сбрасывает chatId, recipientId, messages.
+         *   3. Отписывается от WebSocket-подписки на сообщения.
+         * Принимает: ничего.
+         * Отдаёт: ничего.
+         */        
         function closeChat() {
             document.getElementById('chatWindow').classList.add('hidden');
             currentChatId = null;
@@ -333,15 +435,34 @@
             }
         }
 
+        /**
+         * loadChatHistory()
+         * ---------------
+         * Назначение: Загружает историю сообщений для текущего чата.
+         * Алгоритм:
+         *   1. Подписывается на /user/queue/chat.history (ответ только для текущего пользователя).
+         *   2. Отправляет запрос на /app/chat.history с ID собеседника.
+         *   3. После получения истории вызывает displayMessages().
+         * Принимает: ничего (использует currentRecipientId).
+         * Отдаёт: серверу ID собеседника (STOMP send).
+         * Получает данные: массив сообщений (от сервера по WebSocket).
+         */
         function loadChatHistory() {
-            // Через STOMP подписку (если реализовано на бэке)
-            stompClient.subscribe('/user/queue/chat.history', function(response) {
-                messages = JSON.parse(response.body);
-                displayMessages();
-            });
             stompClient.send("/app/chat.history", {}, currentRecipientId.toString());
         }
 
+        /**
+         * displayMessages()
+         * ---------------
+         * Назначение: Отображает сообщения текущего чата в окне.
+         * Алгоритм:
+         *   1. Очищает DOM-элемент сообщений.
+         *   2. Если сообщений нет — ничего не выводит (или можно раскомментировать вывод "Нет сообщений").
+         *   3. Для каждого сообщения определяет, кто отправитель (вы или собеседник).
+         *   4. Добавляет сообщение в DOM.
+         * Принимает: ничего (использует глобальный массив messages).
+         * Отдаёт: ничего (обновляет DOM).
+         */
         function displayMessages() {
             const messagesList = document.getElementById('messagesList');
             messagesList.innerHTML = '';
@@ -357,6 +478,19 @@
             });
         }
 
+        /**
+         * sendMessage()
+         * ---------------
+         * Назначение: Отправляет новое сообщение в текущий чат.
+         * Алгоритм:
+         *   1. Получает текст из input.
+         *   2. Проверяет, что текст не пустой.
+         *   3. Формирует объект сообщения (recipient, content, chatId).
+         *   4. Отправляет сообщение на сервер через /app/chat.send.
+         *   5. Очищает поле ввода.
+         * Принимает: ничего (использует currentRecipientId, currentChatId).
+         * Отдаёт: серверу объект сообщения (STOMP send).
+         */
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
@@ -370,7 +504,16 @@
             input.value = '';
         }
 
-        // Функция для сворачивания/разворачивания документации
+        /**
+         * toggleDocumentation()
+         * ---------------
+         * Назначение: Сворачивает/разворачивает блок документации.
+         * Алгоритм:
+         *   1. Проверяет текущее состояние блока.
+         *   2. Меняет display между 'none' и 'block'.
+         * Принимает: ничего.
+         * Отдаёт: ничего (обновляет DOM).
+         */
         function toggleDocumentation() {
             const doc = document.getElementById('documentation');
             if (doc.style.display === 'none') {
@@ -380,7 +523,39 @@
             }
         }
 
-        // Инициализация при загрузке страницы
+        /**
+         * clearChat()
+         * ---------------
+         * Назначение: Очищает историю сообщений в текущем чате.
+         * Алгоритм:
+         *   1. Проверяет, выбран ли чат.
+         *   2. Показывает confirm-диалог.
+         *   3. Если подтверждено — отправляет команду на сервер через /app/chat.clear.
+         *   4. Очищает локальный массив сообщений и обновляет DOM.
+         * Принимает: ничего (использует currentChatId).
+         * Отдаёт: серверу chatId (STOMP send).
+         */
+        function clearChat() {
+            if (!currentChatId) return;
+            
+            if (confirm('Вы уверены, что хотите очистить историю чата?')) {
+                stompClient.send("/app/chat.clear", {}, currentChatId.toString());
+                messages = [];
+                displayMessages();
+            }
+        }
+
+        /**
+         * window.onload
+         * ---------------
+         * Назначение: Инициализация приложения при загрузке страницы.
+         * Алгоритм:
+         *   1. Получает JWT токен из localStorage.
+         *   2. Декодирует токен, определяет текущего пользователя.
+         *   3. Вызывает connect() для подключения к серверу.
+         * Принимает: ничего.
+         * Отдаёт: ничего.
+         */
         window.onload = function() {
             // Здесь нужно получить токен из вашего сервиса аутентификации
             // Например, через API запрос или из localStorage

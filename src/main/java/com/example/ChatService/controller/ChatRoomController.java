@@ -31,7 +31,26 @@ public class ChatRoomController {
         try {
             Long user1Id = Long.parseLong(principal.getName());
             Long user2Id = Long.parseLong(targetUserId);
+            if (user1Id.equals(user2Id)) {
+                throw new IllegalArgumentException("Нельзя создать чат с самим собой");
+            }
             chatRoomService.createChatRoom(user1Id, user2Id);
+            
+            // Отправляем обновленный список чатов обоим пользователям
+            List<ChatRoom> user1Rooms = chatRoomService.getUserChatRooms(user1Id);
+            List<ChatRoom> user2Rooms = chatRoomService.getUserChatRooms(user2Id);
+            
+            messagingTemplate.convertAndSendToUser(
+                user1Id.toString(),
+                "/queue/chat.rooms",
+                user1Rooms
+            );
+            
+            messagingTemplate.convertAndSendToUser(
+                user2Id.toString(),
+                "/queue/chat.rooms",
+                user2Rooms
+            );
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid user ID format");
         }
@@ -72,42 +91,4 @@ public class ChatRoomController {
         }
     }
 
-    // REST endpoints для HTTP запросов
-    @PostMapping
-    public ResponseEntity<ChatRoom> createChatRoomRest(
-            @RequestParam String targetUserId,
-            Principal principal) {
-        try {
-            Long user1Id = Long.parseLong(principal.getName());
-            Long user2Id = Long.parseLong(targetUserId);
-            ChatRoom room = chatRoomService.createChatRoom(user1Id, user2Id);
-            return ResponseEntity.ok(room);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid user ID format");
-        }
-    }
-
-    @DeleteMapping("/{roomId}")
-    public ResponseEntity<Void> deleteChatRoomRest(
-            @PathVariable Long roomId,
-            Principal principal) throws JsonProcessingException {
-        try {
-            Long userId = Long.parseLong(principal.getName());
-            chatRoomService.deleteChatRoom(roomId, userId);
-            return ResponseEntity.ok().build();
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid user ID format");
-        }
-    }
-
-    @GetMapping
-    public ResponseEntity<List<ChatRoom>> getUserChatRoomsRest(Principal principal) {
-        try {
-            Long userId = Long.parseLong(principal.getName());
-            List<ChatRoom> rooms = chatRoomService.getUserChatRooms(userId);
-            return ResponseEntity.ok(rooms);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid user ID format");
-        }
-    }
 } 

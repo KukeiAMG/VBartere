@@ -59,7 +59,17 @@ public class ChatRoomService {
                     }
                 });
     }
-    
+
+    @Transactional(readOnly = true)
+    public ChatRoom getChatRoomById(Long chatId) {
+        return chatRoomRepository.findById(chatId)
+                .orElse(null);
+    }
+
+    public boolean isUserInChat(Long chatId, Long userId) {
+        return chatRoomRepository.existsByIdAndUserId(chatId, userId);
+    }
+
     @Transactional
     public void deleteChatRoom(Long roomId, Long userId) throws JsonProcessingException {
         ChatRoom room = chatRoomRepository.findById(roomId)
