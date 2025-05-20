@@ -33,21 +33,30 @@ public class ImageController {
 
     @GetMapping("/{id}")
     private ResponseEntity<?> getImageById(@PathVariable("id") Long id) {
-        Image image = imageService.getImageById(id);
-        Path path = Paths.get(image.getFilePath());
-
         try {
+            Image image = imageService.getImageById(id);
+            Path path = Paths.get(image.getFilePath());
             Resource resource = new UrlResource(path.toUri());
-            if (resource.exists() || resource.isReadable()) {
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(image.getContentType()))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + image.getOriginalFileName() + "\"")
-                        .body(resource);
-            } else {
-                throw new RuntimeException("Файл не найден или недоступен");
+
+            if (!resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Файл не найден или недоступен"));
             }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(image.getContentType()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + image.getOriginalFileName() + "\"")
+                    .body(resource);
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
         } catch (MalformedURLException e) {
-            throw new RuntimeException("Ошибка при загрузке файла", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Ошибка обработки пути к файлу"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Внутренняя ошибка сервера"));
         }
     }
 
