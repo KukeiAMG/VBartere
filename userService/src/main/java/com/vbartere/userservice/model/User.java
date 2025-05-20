@@ -34,6 +34,7 @@ public class User {
 
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "image_id")
+    @JsonManagedReference
     private Image image;
 
     @Email(message = "Некорректный email")

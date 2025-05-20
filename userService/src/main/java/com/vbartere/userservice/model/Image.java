@@ -27,18 +27,23 @@ public class Image {
     @Column(name = "isPreviewImage")
     private boolean isPreviewImage;
 
-    @Column(columnDefinition = "LONGBLOB")
-    private byte[] bytes;
+    @Column(name = "file_path")
+    private String filePath; // путь до файла на диске
+
+    @OneToOne(mappedBy = "image")
+    @JsonBackReference
+    private User user;
 
     public Image() {}
 
-    public Image(Long size, String name, String originalFileName, String contentType, boolean isPreviewImage, byte[] bytes) {
+    public Image(Long size, String name, String originalFileName, String contentType, boolean isPreviewImage, String filePath, User user) {
         this.size = size;
         this.name = name;
         this.originalFileName = originalFileName;
         this.contentType = contentType;
         this.isPreviewImage = isPreviewImage;
-        this.bytes = bytes;
+        this.filePath = filePath;
+        this.user = user;
     }
 
     public Long getId() {
@@ -89,12 +94,20 @@ public class Image {
         isPreviewImage = previewImage;
     }
 
-    public byte[] getBytes() {
-        return bytes;
+    public String getFilePath() {
+        return filePath;
     }
 
-    public void setBytes(byte[] bytes) {
-        this.bytes = bytes;
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     @Override
@@ -106,7 +119,8 @@ public class Image {
                 ", originalFileName='" + originalFileName + '\'' +
                 ", contentType='" + contentType + '\'' +
                 ", isPreviewImage=" + isPreviewImage +
-                ", bytes=" + Arrays.toString(bytes) +
+                ", filePath='" + filePath + '\'' +
+                ", user=" + user +
                 '}';
     }
 }

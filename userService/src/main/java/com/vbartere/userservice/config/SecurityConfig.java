@@ -38,9 +38,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/users/login", "/api/users/register").permitAll()
+                        .requestMatchers("/api/users/login", "/api/users/register", "/images/{id}").permitAll()
                         .requestMatchers("/admin/**", "/dev/**").hasAnyRole("ADMIN", "DEV")
-                        .requestMatchers("/user/**").hasRole("USER")
+                        .requestMatchers("/api/user/**", "/images/upload", "/images/delete-my-profile-photo").hasRole("USER")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

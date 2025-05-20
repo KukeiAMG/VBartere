@@ -4,12 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.Shared.Kafka.DTO.AdminService.AdminUserDTO;
 import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
+import com.vbartere.Shared.Kafka.DTO.UserService.UserDTO;
 import com.vbartere.Shared.Kafka.Enum.UserEventType;
 import com.vbartere.Shared.Kafka.Events.UserEvent;
 import com.vbartere.userservice.DTO.UserUpdateDTO;
 import com.vbartere.userservice.Kafka.Producers.SendAdminRequest;
 import com.vbartere.userservice.Kafka.Producers.SendNotificationRequest;
 import com.vbartere.userservice.Kafka.Producers.SendReferralRequest;
+import com.vbartere.userservice.Mapper.UserMapper;
 import com.vbartere.userservice.exceptions.InvalidTokenException;
 import com.vbartere.userservice.model.*;
 import com.vbartere.userservice.repository.CartRepository;
@@ -26,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -40,6 +44,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserMapper userMapper;
 
     private final SendAdminRequest sendAdminRequest;
     private final SendNotificationRequest sendNotificationRequest;
@@ -48,7 +53,7 @@ public class UserService {
     @Autowired
     public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository,
                        CartRepository cartRepository, KafkaTemplate<String, String> kafkaTemplate,
-                       PasswordEncoder passwordEncoder, ObjectMapper objectMapper, RefreshTokenRepository refreshTokenRepository, SendAdminRequest sendAdminRequest, SendNotificationRequest sendNotificationRequest, SendReferralRequest sendReferralRequest) {
+                       PasswordEncoder passwordEncoder, ObjectMapper objectMapper, RefreshTokenRepository refreshTokenRepository, UserMapper userMapper, SendAdminRequest sendAdminRequest, SendNotificationRequest sendNotificationRequest, SendReferralRequest sendReferralRequest) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.roleRepository = roleRepository;
@@ -57,16 +62,24 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.userMapper = userMapper;
         this.sendAdminRequest = sendAdminRequest;
         this.sendNotificationRequest = sendNotificationRequest;
         this.sendReferralRequest = sendReferralRequest;
     }
 
     @Transactional(readOnly = true)
-    public User getById(Long id) {
-        return userRepository.findById(id).orElseThrow(
+    public UserDTO getById(Long id) {
+        User user = userRepository.findById(id).orElseThrow(
                 () -> new EntityNotFoundException("пользователь не найден в БД")
         );
+        return userMapper.userToDTO(user);
+    }
+
+    @Transactional(readOnly = true)
+    public User getUserEntityById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
     }
 
     @Transactional(readOnly = true)
@@ -77,17 +90,13 @@ public class UserService {
     @Transactional
     public Map<String, String> loginUser(String phoneNumber, String password) throws JsonProcessingException {
         User user = userRepository.findByPhoneNumber(phoneNumber)
-                .filter(u -> u.getPassword().equals(password))
+                .filter(u -> passwordEncoder.matches(password, u.getPassword()))
                 .orElseThrow(() -> new IllegalArgumentException("wrong phone number or password"));
-
-//        String accessToken = jwtService.generateToken(phoneNumber);
-//        String refreshToken = jwtService.generateRefreshToken(phoneNumber);
 
         String accessToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-         String hashedToken = passwordEncoder.encode(refreshToken);
-        //String hashedToken = passwordEncoder.matches(password, refreshToken);
+        String hashedToken = passwordEncoder.encode(refreshToken);
 
         refreshTokenRepository.deleteAllByUser(user);
 
@@ -162,10 +171,6 @@ public class UserService {
                 user.getInvitedByCode()
         );
 
-//        kafkaTemplate.send("user.registration.referral", objectMapper.writeValueAsString(userReferralDTO));
-//        kafkaTemplate.send("notification.user.event", objectMapper.writeValueAsString(userEvent));
-//        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
-
         sendReferralRequest.sendReferralRequest(objectMapper.writeValueAsString(userReferralDTO));
         sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
         sendAdminRequest.sendAdminRequest(objectMapper.writeValueAsString(adminUserDTO));
@@ -175,7 +180,7 @@ public class UserService {
 
     @Transactional
     public User assignRoleToUser(Long userId, String roleName) {
-        User user = getById(userId);
+        User user = getUserEntityById(userId);
 
         Role role = roleRepository.findByName(roleName);
         if (role == null) {
@@ -203,21 +208,34 @@ public class UserService {
     }
 
     @Transactional
-    public User updateUserDetails(Long id, UserUpdateDTO dto) throws JsonProcessingException {
+    public UserDTO updateUserDetails(Long id, UserUpdateDTO dto) throws JsonProcessingException {
 
-        User user = getById(id);
+        User user = getUserEntityById(id);
 
-        if (dto.getPhoneNumber() != null) user.setPhoneNumber(dto.getPhoneNumber());
+        if (dto.getEmail() != null && !dto.getEmail().equals(user.getEmail())) {
+            Optional<User> userByEmail = userRepository.findByEmail(dto.getEmail());
+            if (userByEmail.isPresent() && !userByEmail.get().getId().equals(user.getId())) {
+                throw new IllegalArgumentException("Email уже занят другим пользователем");
+            }
+            user.setEmail(dto.getEmail());
+        }
+
+        if (dto.getPhoneNumber() != null && !dto.getPhoneNumber().equals(user.getPhoneNumber())) {
+            Optional<User> userByPhone = userRepository.findByPhoneNumber(dto.getPhoneNumber());
+            if (userByPhone.isPresent() && !userByPhone.get().getId().equals(user.getId())) {
+                throw new IllegalArgumentException("Телефон уже занят другим пользователем");
+            }
+            user.setPhoneNumber(dto.getPhoneNumber());
+        }
+
         if (dto.getPassword() != null) user.setPassword(passwordEncoder.encode(dto.getPassword()));
         if (dto.getName() != null) user.setName(dto.getName());
         if (dto.getSurname() != null) user.setSurname(dto.getSurname());
         if (dto.getInvitedByCode() != null) user.setInvitedByCode(dto.getInvitedByCode());
-        if (dto.getEmail() != null) user.setEmail(dto.getEmail());
         if (dto.getBanned() != null) user.setBanned(dto.getBanned());
 
         if (dto.getRoleIds() != null) {
-            Set<Role> roles = new HashSet<>(roleRepository.findAllById(dto.getRoleIds()));
-            user.setRoles(roles);
+            user.setRoles(user.getRoles());
         }
 
         userRepository.save(user);
@@ -236,39 +254,30 @@ public class UserService {
         adminUserDTO.setPhoneNumber(user.getPhoneNumber());
         adminUserDTO.setEmail(user.getEmail());
         adminUserDTO.setInvitedByCode(user.getInvitedByCode());
-        adminUserDTO.setBanned(false);
+        adminUserDTO.setBanned(user.isBanned);
         adminUserDTO.setEvent(UserEventType.USER_UPDATED);
 
-//        kafkaTemplate.send("user-event", objectMapper.writeValueAsString(userEvent));
-//        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
         sendNotificationRequest.updateNotificationAsync(userEvent);
         sendAdminRequest.updateAdminAsync(adminUserDTO);
 
-        return user;
-    }
-
-    @Transactional
-    public void uploadUserImage(Long id, MultipartFile file) throws IOException {
-        User user = getById(id);
-
-        Image image = new Image();
-        image.setName(file.getName());
-        image.setOriginalFileName(file.getOriginalFilename());
-        image.setContentType(file.getContentType());
-        image.setSize(file.getSize());
-        image.setBytes(file.getBytes());
-        image.setPreviewImage(true);
-
-        user.setImage(image);
-        userRepository.save(user);
+        return userMapper.userToDTO(user);
     }
 
     @Transactional
     public void removeUserImage(Long id) {
-        User user = getById(id);
+        User user = getUserEntityById(id);
 
-        user.setImage(null);
-        userRepository.save(user);
+        Image image = user.getImage();
+        if (image != null) {
+            try {
+                Files.deleteIfExists(Paths.get(image.getFilePath()));
+            } catch (IOException e) {
+                System.err.println("Ошибка удаления файла изображения: " + image.getFilePath() + ". Сообщение: " + e.getMessage());
+            }
+
+            user.setImage(null);
+            userRepository.save(user);
+        }
     }
 
     @Transactional(readOnly = true)
