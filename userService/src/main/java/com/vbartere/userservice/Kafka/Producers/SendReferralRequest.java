@@ -40,6 +40,7 @@ public class SendReferralRequest {
     public void updateReferralAsync(UserReferralDTO userReferralDTO) {
         try {
             String json = objectMapper.writeValueAsString(userReferralDTO);
+            sendReferralRequest(json);
         } catch (JsonProcessingException e) {
             System.err.println("ошибка отправки сообщения: " + e.getMessage());
         }

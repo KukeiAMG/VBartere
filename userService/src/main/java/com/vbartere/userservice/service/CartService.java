@@ -1,5 +1,11 @@
 package com.vbartere.userservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vbartere.Shared.Kafka.Enum.UserEventType;
+import com.vbartere.Shared.Kafka.Events.CartEvent;
+import com.vbartere.Shared.Kafka.Events.UserEvent;
+import com.vbartere.userservice.Kafka.Producers.SendCartRequest;
+import com.vbartere.userservice.Kafka.Producers.SendNotificationRequest;
 import com.vbartere.userservice.Mapper.CartMapper;
 import com.vbartere.Shared.Kafka.DTO.Cart.CartDTO;
 import com.vbartere.userservice.model.Cart;
@@ -17,11 +23,13 @@ public class CartService {
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
     private final CartMapper cartMapper;
+    private final SendNotificationRequest sendNotificationRequest;
 
-    public CartService(CartRepository cartRepository, UserRepository userRepository, CartMapper cartMapper) {
+    public CartService(CartRepository cartRepository, UserRepository userRepository, CartMapper cartMapper, SendNotificationRequest sendNotificationRequest) {
         this.cartRepository = cartRepository;
         this.userRepository = userRepository;
         this.cartMapper = cartMapper;
+        this.sendNotificationRequest = sendNotificationRequest;
     }
 
     @Transactional(readOnly = true)
@@ -52,6 +60,10 @@ public class CartService {
     @Transactional
     public void addProductToCart(Long userId, Long advertisementId) {
 
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new EntityNotFoundException("Пользователь не найден в БД")
+        );
+
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseGet(() -> createNewCartForUser(userId));
 
@@ -59,15 +71,17 @@ public class CartService {
             cart.setAdvertisementList(new ArrayList<>());
         }
 
-        if (!cart.getAdvertisementList().contains(advertisementId)) {
-            System.out.println("Before adding: " + cart.getAdvertisementList());
+        if (!user.isBanned()) {
+            if (!cart.getAdvertisementList().contains(advertisementId)) {
+                System.out.println("Before adding: " + cart.getAdvertisementList());
 
-            cart.getAdvertisementList().add(advertisementId);
+                cart.getAdvertisementList().add(advertisementId);
 
-            System.out.println("After adding: " + cart.getAdvertisementList());
+                System.out.println("After adding: " + cart.getAdvertisementList());
+            }
+
+            cartRepository.save(cart);
         }
-
-        cartRepository.save(cart);
     }
 
     private Cart createNewCartForUser(Long userId) {

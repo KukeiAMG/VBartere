@@ -41,6 +41,7 @@ public class SendNotificationRequest {
     public void updateNotificationAsync(UserEvent UserEvent) {
         try {
             String json = objectMapper.writeValueAsString(UserEvent);
+            sendNotificationRequest(json);
         } catch (JsonProcessingException e) {
             System.err.println("ошибка отправки сообщения: " + e.getMessage());
         }

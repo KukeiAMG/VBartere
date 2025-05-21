@@ -3,6 +3,7 @@ package com.vbartere.userservice.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.Shared.Kafka.DTO.AdminService.AdminUserDTO;
+import com.vbartere.Shared.Kafka.DTO.Gateway.UserInfoDTO;
 import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import com.vbartere.Shared.Kafka.DTO.UserService.UserDTO;
 import com.vbartere.Shared.Kafka.Enum.UserEventType;
@@ -11,6 +12,7 @@ import com.vbartere.userservice.DTO.UserUpdateDTO;
 import com.vbartere.userservice.Kafka.Producers.SendAdminRequest;
 import com.vbartere.userservice.Kafka.Producers.SendNotificationRequest;
 import com.vbartere.userservice.Kafka.Producers.SendReferralRequest;
+import com.vbartere.userservice.Mapper.AdminMapper;
 import com.vbartere.userservice.Mapper.UserMapper;
 import com.vbartere.userservice.exceptions.InvalidTokenException;
 import com.vbartere.userservice.model.*;
@@ -19,19 +21,17 @@ import com.vbartere.userservice.repository.RefreshTokenRepository;
 import com.vbartere.userservice.repository.RoleRepository;
 import com.vbartere.userservice.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -45,15 +45,13 @@ public class UserService {
     private final ObjectMapper objectMapper;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserMapper userMapper;
+    private final AdminMapper adminMapper;
 
     private final SendAdminRequest sendAdminRequest;
     private final SendNotificationRequest sendNotificationRequest;
     private final SendReferralRequest sendReferralRequest;
 
-    @Autowired
-    public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository,
-                       CartRepository cartRepository, KafkaTemplate<String, String> kafkaTemplate,
-                       PasswordEncoder passwordEncoder, ObjectMapper objectMapper, RefreshTokenRepository refreshTokenRepository, UserMapper userMapper, SendAdminRequest sendAdminRequest, SendNotificationRequest sendNotificationRequest, SendReferralRequest sendReferralRequest) {
+    public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository, CartRepository cartRepository, KafkaTemplate<String, String> kafkaTemplate, PasswordEncoder passwordEncoder, ObjectMapper objectMapper, RefreshTokenRepository refreshTokenRepository, UserMapper userMapper, AdminMapper adminMapper, SendAdminRequest sendAdminRequest, SendNotificationRequest sendNotificationRequest, SendReferralRequest sendReferralRequest) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.roleRepository = roleRepository;
@@ -63,6 +61,7 @@ public class UserService {
         this.objectMapper = objectMapper;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userMapper = userMapper;
+        this.adminMapper = adminMapper;
         this.sendAdminRequest = sendAdminRequest;
         this.sendNotificationRequest = sendNotificationRequest;
         this.sendReferralRequest = sendReferralRequest;
@@ -113,8 +112,8 @@ public class UserService {
                 user.getEmail(),
                 UserEventType.USER_LOGIN
         );
-        kafkaTemplate.send("user.event", objectMapper.writeValueAsString(userEvent));
-
+        //kafkaTemplate.send("user.event", objectMapper.writeValueAsString(userEvent));
+        sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
         Map<String, String> response = new HashMap<>();
         response.put("accessToken", accessToken);
         response.put("refreshToken", refreshToken);
@@ -158,13 +157,7 @@ public class UserService {
                 UserEventType.USER_CREATED
         );
 
-        AdminUserDTO adminUserDTO = new AdminUserDTO();
-        adminUserDTO.setId(user.getId());
-        adminUserDTO.setPhoneNumber(user.getPhoneNumber());
-        adminUserDTO.setEmail(user.getEmail());
-        adminUserDTO.setInvitedByCode(user.getInvitedByCode());
-        adminUserDTO.setBanned(false);
-        adminUserDTO.setEvent(UserEventType.USER_CREATED);
+        AdminUserDTO adminUserDTO = adminMapper.toDto(user, UserEventType.USER_CREATED);
 
         UserReferralDTO userReferralDTO = new UserReferralDTO(
                 user.getId(),
@@ -179,13 +172,12 @@ public class UserService {
     }
 
     @Transactional
-    public User assignRoleToUser(Long userId, String roleName) {
+    public UserDTO assignRoleToUser(Long userId, Long roleId) {
         User user = getUserEntityById(userId);
 
-        Role role = roleRepository.findByName(roleName);
-        if (role == null) {
-            throw new IllegalArgumentException("role not found");
-        }
+        Role role = roleRepository.findById(roleId).orElseThrow(
+                () -> new EntityNotFoundException("role not found")
+        );
 
         if (user.getRoles().contains(role)) {
             throw new IllegalArgumentException("user already has this role");
@@ -202,9 +194,13 @@ public class UserService {
                 "Вам назначена новая роль: " + role.getName()
         );
 
-        sendNotificationRequest.updateNotificationAsync(userEvent);
+        AdminUserDTO adminUserDTO = adminMapper.toDto(user, UserEventType.USER_UPDATED);
 
-        return userRepository.save(user);
+        sendNotificationRequest.updateNotificationAsync(userEvent);
+        sendAdminRequest.updateAdminAsync(adminUserDTO);
+        userRepository.save(user);
+
+        return userMapper.userToDTO(user);
     }
 
     @Transactional
@@ -247,16 +243,8 @@ public class UserService {
                 UserEventType.USER_UPDATED
         );
 
-        AdminUserDTO adminUserDTO = new AdminUserDTO();
-        adminUserDTO.setId(user.getId());
-        adminUserDTO.setName(user.getName());
-        adminUserDTO.setSurname(user.getSurname());
-        adminUserDTO.setPhoneNumber(user.getPhoneNumber());
-        adminUserDTO.setEmail(user.getEmail());
-        adminUserDTO.setInvitedByCode(user.getInvitedByCode());
-        adminUserDTO.setBanned(user.isBanned);
-        adminUserDTO.setEvent(UserEventType.USER_UPDATED);
-
+        AdminUserDTO adminUserDTO = adminMapper.toDto(user, UserEventType.USER_UPDATED);
+        System.out.println(adminUserDTO.toString());
         sendNotificationRequest.updateNotificationAsync(userEvent);
         sendAdminRequest.updateAdminAsync(adminUserDTO);
 
@@ -288,6 +276,18 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    public UserInfoDTO getUserByPhoneNumberWithRoles(String phoneNumber) {
+        User user = userRepository.findByPhoneNumberWithRoles(phoneNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+
+        List<String> roles = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toList());
+
+        return new UserInfoDTO(user.getId(), roles);
+    }
+
+    @Transactional(readOnly = true)
     public boolean isPhoneNumberRegistered(String phoneNumber) {
         return userRepository.findByPhoneNumber(phoneNumber).isPresent();
     }
@@ -300,7 +300,8 @@ public class UserService {
         adminUserDTO.setId(id);
         adminUserDTO.setEvent(UserEventType.USER_DELETED);
 
-        kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
+        //kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
+        sendAdminRequest.updateAdminAsync(adminUserDTO);
     }
 }
 

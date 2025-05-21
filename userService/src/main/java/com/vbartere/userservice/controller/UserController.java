@@ -178,9 +178,15 @@ public class UserController {
     }
 
     @PostMapping("/{userId}/roles")
-    public ResponseEntity<User> assignRole(@PathVariable Long userId, @RequestParam String roleName) {
-        User user = userService.assignRoleToUser(userId, roleName);
-        return ResponseEntity.ok(user);
+    public ResponseEntity<?> assignRole(@PathVariable Long userId, @RequestBody Map<String, Long> payload) {
+        try {
+            Long roleId = payload.get("roleId");
+            UserDTO user = userService.assignRoleToUser(userId, roleId);
+            return ResponseEntity.ok(user);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 }
 

@@ -1,18 +1,25 @@
 package com.vbartere.userservice.controller;
 
+import com.vbartere.Shared.Kafka.DTO.Gateway.UserInfoDTO;
 import com.vbartere.userservice.exceptions.InvalidTokenException;
 import com.vbartere.userservice.service.JwtService;
 import com.vbartere.userservice.service.UserService;
-import org.apache.coyote.Response;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jwt/")
+@EnableMethodSecurity(securedEnabled = true)
 public class JwtController {
 
     private final UserService userService;
@@ -54,6 +61,58 @@ public class JwtController {
             return ResponseEntity.ok(userId);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("/getCurrentUserRoles")
+    public ResponseEntity<?> getCurrentUserRoles(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
+            @RequestHeader(value = "X-Gateway-Secret", required = false) String gatewaySecret
+    ) {
+        final String expectedSecret = "my-super-secret";
+
+        if (!expectedSecret.equals(gatewaySecret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String token = authHeader.substring(7);
+        List<String> roles = jwtService.extractRoles(token);
+
+        return ResponseEntity.ok(roles);
+    }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("/currentUserInfo")
+    public ResponseEntity<UserInfoDTO> getCurrentUserInfo(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
+            @RequestHeader(value = "X-Gateway-Secret", required = true) String gatewaySecret
+    ) {
+        final String expectedSecret = "my-super-secret";
+
+        if (!expectedSecret.equals(gatewaySecret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            String token = authHeader.substring(7);
+            String phoneNumber = jwtService.extractPhoneNumber(token);
+
+            UserInfoDTO userInfo = userService.getUserByPhoneNumberWithRoles(phoneNumber);
+
+            return ResponseEntity.ok(userInfo);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
