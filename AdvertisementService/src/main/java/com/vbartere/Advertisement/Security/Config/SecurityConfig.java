@@ -42,6 +42,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/advertisements/{id}/update-fields").hasAuthority("ROLE_USER")
                         .requestMatchers(HttpMethod.PUT, "/api/advertisements/{id}/update-images").hasAuthority("ROLE_USER")
                         .requestMatchers(HttpMethod.DELETE, "/images/{id}").hasAuthority("ROLE_USER")
+//                        .requestMatchers("/api/subcategory/create", "/api/subcategory/{id}/delete",
+//                                "/api/subcategory/{id}/update").hasAuthority("ROLE_ADMIN")
+//                        .requestMatchers("/api/category/create", "/api/category/{id}/update",
+//                                "/api/category/{id}/delete").hasAuthority("ROLE_ADMIN")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

@@ -126,14 +126,19 @@ public class AdvertisementController {
     }
 
     @DeleteMapping("/{id}/delete")
-    public ResponseEntity<?> deleteAdvertisement(@PathVariable("id") Long id) {
+    public ResponseEntity<?> deleteAdvertisement(@PathVariable("id") Long advertisementId,
+                                                 @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         try {
-            advertisementService.deleteAdvertisementById(id);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new InvalidTokenException("Невалидный формат токена");
+            }
+
+            String token = authHeader.substring(7);
+            Long userId = jwtService.getUserId(token);
+
+            advertisementService.deleteAdvertisementById(userId, advertisementId);
             return ResponseEntity.ok().build();
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (JsonProcessingException e) {
+        } catch (EntityNotFoundException | JsonProcessingException | IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.Advertisement.Mapper.AdvertisementMapper;
 import com.vbartere.Advertisement.kafka.Service.Producers.Admin.SendAdminService;
+import com.vbartere.Advertisement.kafka.Service.Producers.Advertisement.MissingAdvertisementService;
 import com.vbartere.Advertisement.kafka.Service.Producers.Cache.CacheAwaiterService;
 import com.vbartere.Advertisement.kafka.Service.Producers.Cache.SendCacheService;
 import com.vbartere.Advertisement.Model.Advertisement;
@@ -15,6 +16,8 @@ import com.vbartere.Advertisement.Repository.SubCategoryRepository;
 import com.vbartere.Shared.Kafka.DTO.AdminService.AdminAdvertisementDTO;
 import com.vbartere.Shared.Kafka.DTO.Advertisement.AdvertisementDTO;
 import com.vbartere.Shared.Kafka.Enum.AdvertisementEventType;
+import com.vbartere.Shared.Kafka.Enum.UserEventType;
+import com.vbartere.Shared.Kafka.Events.CartResult;
 import io.lettuce.core.api.sync.RedisCommands;
 import jakarta.persistence.EntityNotFoundException;
 import org.hibernate.Hibernate;
@@ -42,8 +45,9 @@ public class AdvertisementService {
     private final SendCacheService sendCacheService;
     private final SendAdminService sendAdminService;
     private final AdvertisementMapper advertisementMapper;
+    private final MissingAdvertisementService missingAdvertisementService;
 
-    public AdvertisementService(AdvertisementRepository advertisementRepository, SubCategoryRepository subCategoryRepository, ImageService imageService, ObjectMapper objectMapper, RedisCommands<String, String> redisCommands, CacheAwaiterService cacheAwaiterService, SendCacheService sendCacheService, SendAdminService sendAdminService, AdvertisementMapper advertisementMapper) {
+    public AdvertisementService(AdvertisementRepository advertisementRepository, SubCategoryRepository subCategoryRepository, ImageService imageService, ObjectMapper objectMapper, RedisCommands<String, String> redisCommands, CacheAwaiterService cacheAwaiterService, SendCacheService sendCacheService, SendAdminService sendAdminService, AdvertisementMapper advertisementMapper, MissingAdvertisementService missingAdvertisementService) {
         this.advertisementRepository = advertisementRepository;
         this.subCategoryRepository = subCategoryRepository;
         this.imageService = imageService;
@@ -53,6 +57,7 @@ public class AdvertisementService {
         this.sendCacheService = sendCacheService;
         this.sendAdminService = sendAdminService;
         this.advertisementMapper = advertisementMapper;
+        this.missingAdvertisementService = missingAdvertisementService;
     }
 
     @Transactional(readOnly = true)
@@ -298,21 +303,26 @@ public class AdvertisementService {
     }
 
     @Transactional
-    public void deleteAdvertisementById(Long advertisementID) throws JsonProcessingException {
+    public void deleteAdvertisementById(Long userId, Long advertisementID) throws JsonProcessingException {
         Advertisement advertisement = advertisementRepository.findById(advertisementID)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
 
+        if (!advertisement.getOwnerId().equals(userId)) {
+            throw new IllegalArgumentException("Это не ваше объявление");
+        }
         advertisementRepository.delete(advertisement);
 
-        AdminAdvertisementDTO adminAdvertisementDTO = new AdminAdvertisementDTO();
-        adminAdvertisementDTO.setId(advertisementID);
-        adminAdvertisementDTO.setEventType(AdvertisementEventType.ADVERTISEMENT_DELETED);
+        AdminAdvertisementDTO adminAdvertisementDTO =
+                advertisementMapper.toAdminDto(advertisement, AdvertisementEventType.ADVERTISEMENT_DELETED);
 
         String cacheKey = "advertisement:" + advertisementID;
         redisCommands.del(cacheKey);
 
         System.out.println("Объявление и его кэш успешно удалены: " + advertisementID);
 
+        missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
+                new CartResult(userId, advertisementID, true, UserEventType.USER_REMOVE_HIS_ADVERTISEMENT)
+        ));
         sendAdminService.sendAdminRequest(objectMapper.writeValueAsString(adminAdvertisementDTO));
     }
 }
