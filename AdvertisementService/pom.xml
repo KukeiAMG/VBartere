@@ -90,7 +90,7 @@
 		<dependency>
 			<groupId>com.github.KukeiAMG</groupId>
 			<artifactId>SharedKafka</artifactId>
-			<version>e0ab4309e1</version>
+			<version>e513ad8af2</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->

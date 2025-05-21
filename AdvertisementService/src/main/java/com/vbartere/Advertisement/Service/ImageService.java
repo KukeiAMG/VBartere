@@ -162,28 +162,18 @@ public class ImageService {
 
         if (advertisement != null) {
             List<Image> images = advertisement.getImageList();
-            if (images == null) {
-                images = new ArrayList<>();
-            }
+            if (images != null) {
+                images.removeIf(img -> img.getId().equals(id));
 
-            for (int i = 0; i < images.size(); i++) {
-                if (images.get(i).getId().equals(id)) {
-                    images.remove(i);
-                    break;
+                if (image.isPreviewImage()) {
+                    images.forEach(img -> img.setPreviewImage(false));
+                    if (!images.isEmpty()) {
+                        images.get(0).setPreviewImage(true);
+                    }
                 }
-            }
 
-            if (image.isPreviewImage()) {
-                for (Image img : images) {
-                    img.setPreviewImage(false);
-                }
-                if (!images.isEmpty()) {
-                    images.getFirst().setPreviewImage(true);
-                }
+                advertisementRepository.save(advertisement);
             }
-
-            advertisement.setImageList(images);
-            advertisementRepository.save(advertisement);
         }
     }
 }

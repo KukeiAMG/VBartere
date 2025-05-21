@@ -32,7 +32,8 @@ public class SendCacheService {
                 System.err.println("ошибка при отправке сообщения: " + ex.getMessage());
             } else {
                 RecordMetadata metadata = result.getRecordMetadata();
-                System.out.printf("сообщение отправлено в " + metadata.topic());
+                System.out.printf("Топик: %s, Партиция: %d, Оффсет: %d%n",
+                        metadata.topic(), metadata.partition(), metadata.offset());
             }
         });
     }

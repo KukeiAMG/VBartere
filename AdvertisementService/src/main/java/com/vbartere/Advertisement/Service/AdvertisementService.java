@@ -17,6 +17,7 @@ import com.vbartere.Shared.Kafka.DTO.Advertisement.AdvertisementDTO;
 import com.vbartere.Shared.Kafka.Enum.AdvertisementEventType;
 import io.lettuce.core.api.sync.RedisCommands;
 import jakarta.persistence.EntityNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -82,8 +83,7 @@ public class AdvertisementService {
     }
 
     @Transactional(readOnly = true)
-    public AdvertisementDTO getAdvertisementById(Long id) throws JsonProcessingException, ExecutionException, InterruptedException {
-
+    public AdvertisementDTO getAdvertisementById(Long id) {
         String cacheKey = "advertisement:" + id;
         String cacheData = redisCommands.get(cacheKey);
 
@@ -92,28 +92,28 @@ public class AdvertisementService {
             try {
                 return objectMapper.readValue(cacheData, AdvertisementDTO.class);
             } catch (JsonProcessingException e) {
-                System.err.println("ошибка чтения из кэша: " + e.getMessage());
+                System.err.println("Ошибка чтения из кэша: " + e.getMessage());
             }
         }
 
-        Advertisement advertisement = advertisementRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Объявления нет в БД"));
+        // fallback на БД
+        Advertisement ad = advertisementRepository.findByIdWithImages(id)
+                .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено в БД"));
 
-        AdvertisementDTO advertisementDTO = advertisementMapper.advertisementToDTO(advertisement);
+        AdvertisementDTO dto = advertisementMapper.advertisementToDTO(ad);
 
         try {
-            sendCacheService.sendCacheRequest(objectMapper.writeValueAsString(advertisementDTO));
+            CompletableFuture<AdvertisementDTO> future = cacheAwaiterService.awaitCache(id);
 
-            CompletableFuture<Advertisement> future = cacheAwaiterService.awaitCache(advertisement.getId());
-            Advertisement advFromCache = future.get(10, TimeUnit.SECONDS);
+            sendCacheService.sendCacheRequest(String.valueOf(id));
 
-            return advertisementMapper.advertisementToDTO(advFromCache);
-
+            return future.get(4, TimeUnit.SECONDS);
         } catch (Exception e) {
-            System.err.println("\nкэш недоступен или не готов: " + e.getMessage());
-            return advertisementDTO; // fallback на локальную БД
+            System.err.println("Кэш недоступен или не готов: " + e.getMessage());
+            return dto; // fallback
         }
     }
+
 
     @Transactional
     public Advertisement getAdvertisementEntity(Long id) {
@@ -266,12 +266,9 @@ public class AdvertisementService {
         Advertisement advertisement = advertisementRepository.findById(advertisementID)
                 .orElseThrow(() -> new EntityNotFoundException("Объявление не найдено"));
 
-        List<Image> oldImages = advertisement.getImageList();
-        if (oldImages != null && !oldImages.isEmpty()) {
-            for (Image img : oldImages) {
-                imageService.deleteImageById(img.getId());
-            }
-            advertisement.getImageList().clear();
+        List<Image> oldImages = new ArrayList<>(advertisement.getImageList()); // копия, чтобы избежать ConcurrentModification
+        for (Image img : oldImages) {
+            imageService.deleteImageById(img.getId());
         }
 
         List<Image> newImages = new ArrayList<>();
@@ -285,7 +282,7 @@ public class AdvertisementService {
 
         if (!newImages.isEmpty()) {
             newImages.getFirst().setPreviewImage(true);
-            advertisement.setImageList(newImages);
+            advertisement.getImageList().addAll(newImages);
         }
 
         Advertisement savedAd = advertisementRepository.save(advertisement);

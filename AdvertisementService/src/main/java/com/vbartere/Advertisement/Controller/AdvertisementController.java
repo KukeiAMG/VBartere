@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 @RequestMapping("/api/advertisements")
@@ -38,8 +39,14 @@ public class AdvertisementController {
     }
 
     @GetMapping("/{id}")
-    public AdvertisementDTO getAdvertisement(@PathVariable Long id) throws ExecutionException, JsonProcessingException, InterruptedException {
-        return advertisementService.getAdvertisementById(id);
+    public ResponseEntity<?> getAdvertisement(@PathVariable Long id) throws ExecutionException, JsonProcessingException, InterruptedException {
+        try {
+            AdvertisementDTO advertisementDTO = advertisementService.getAdvertisementById(id);
+            return ResponseEntity.ok().body(advertisementDTO);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping(value = "/create", consumes = {"multipart/form-data"})
@@ -113,7 +120,7 @@ public class AdvertisementController {
 
             AdvertisementDTO updatedAd = advertisementService.updateAdvertisementImages(id, files);
             return ResponseEntity.ok(updatedAd);
-        } catch (Exception e) {
+        } catch (EntityNotFoundException | IOException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
     }
