@@ -2,8 +2,8 @@
   @if (!isInProfile){
     <div class="tovar-card" [routerLink]="['/advertisement', advertisement.id]">
       <div class="tovar-name">
-        @if (advertisement.imageList && advertisement.imageList.length) {
-          <img [src]="imageService.getImage(advertisement.imageList[0].id)" [alt]="advertisement.title" class="tovar-card__MainPicture">
+        @if (advertisement.imagesId && advertisement.imagesId.length) {
+          <img [src]="imageService.getImage(advertisement.imagesId[0])" [alt]="advertisement.title" class="tovar-card__MainPicture">
         } @else {
           <img src="/assets/images/avatar_placeholder.png" [alt]="advertisement.title" class="tovar-card__MainPicture">
         }
@@ -25,7 +25,11 @@
   </div>
 
   <div class="tovar-card__action-btns">
-    <button class="btn">Добавить в корзину</button>
+    @if (isMine) {
+      <div class="my-item-label">ЭТО ВАШ ТОВАР</div>
+    } @else if (!isInCart) {
+      <button class="btn" (click)="addToCart(); $event.stopPropagation()">Добавить в корзину</button>
+    }
   </div>
 </div>
   }
@@ -33,18 +37,21 @@
   @else{
     <div class="tovar-card__profile">
       <div class="tovar-name">
-        @if (advertisement.imageList && advertisement.imageList.length) {
-          <img [src]="imageService.getImage(advertisement.imageList[0].id)" [alt]="advertisement.title" class="tovar-card__MainPicture__profile">
+          @if (advertisement.imagesId && advertisement.imagesId.length) {
+          <img [src]="imageService.getImage(advertisement.imagesId[0])" [alt]="advertisement.title" class="tovar-card__MainPicture__profile">
         } @else {
           <img src="/assets/images/avatar_placeholder.png" [alt]="advertisement.title" class="tovar-card__MainPicture__profile">
         }
     
         <div class="tovar-card__name">
+          <strong class="medium-text">Название:</strong>
           <strong class="medium-text">{{ advertisement.title }}</strong>
+          <span class="subtitle">Категория: {{advertisement.subCategoryId}}</span>
         </div>
       </div>
-    
+      <strong class="medium-text">Описание:</strong>
       <div class="tovar-card__description medium-text">
+        
         {{advertisement.description}}
       </div>
     

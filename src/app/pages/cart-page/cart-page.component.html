@@ -16,13 +16,18 @@
     <main class="profile-page__body">
       <div class="user-advertisements">
         <h3 class="h6 mb16">Товары в корзине</h3>
-        @if (cartItems.length > 0) {
+        @if (isLoading) {
+          <div class="loading">Загрузка...</div>
+        } @else if (errorMessage) {
+          <div class="error">{{ errorMessage }}</div>
+        } @else if (cartItems.length > 0) {
           <div class="tovar-card__wrapper">
             @for (item of cartItems; track item.id) {
               <app-tovar-card
                 [advertisement]="item"
                 [isInProfile]="false"
                 [isMyProfile]="false"
+                [isInCart]="true"
               ></app-tovar-card>
             }
           </div>
@@ -39,7 +44,7 @@
         } @else {
           <div class="empty-cart">
             <h2 class="h4">Корзина пуста</h2>
-            <p class="medium-text">Добавьте товары для обмена</p>
+            <p class="medium-text">Добавьте товары для покупки</p>
             <a [routerLink]="['/']" class="btn btn-shadow">
               Перейти к поиску
             </a>
@@ -50,8 +55,8 @@
       <div class="profile-info">
         <h3 class="h6 mb16">Информация</h3>
         <p class="medium-text">
-          Здесь вы можете управлять товарами, которые хотите обменять. 
-          Добавляйте товары в корзину, чтобы начать процесс обмена.
+          Здесь вы можете управлять товарами, которые хотите купить. 
+          Добавляйте товары в корзину, чтобы начать процесс покупки.
         </p>
       </div>
     </main>

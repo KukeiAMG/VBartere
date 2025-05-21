@@ -1,0 +1,28 @@
+<form class="profile-search-form" [formGroup]="searchForm">
+    <div class="filter-group">
+      <label class="blee-form-label">
+        <span class="blee-form-label__text">Название</span>
+        <input type="text" class="blee-form-input" formControlName="title">
+      </label>
+    </div>
+
+    <div class="filter-group">
+      <label class="blee-form-label">
+        <span class="blee-form-label__text">Категория</span>
+        <input type="text" class="blee-form-input" formControlName="subCategoryId">
+      </label>
+    </div>
+
+    <div class="filter-group">
+      <label class="blee-form-label">
+        <span class="blee-form-label__text">Описание</span>
+        <input type="text" class="blee-form-input" formControlName="description">
+      </label>
+    </div>
+
+    @if (isLoading) {
+      <div class="loading-indicator">
+        <div class="spinner"></div>
+      </div>
+    }
+</form>

@@ -17,21 +17,21 @@
 
     <div class="advertisement-content">
       <div class="images-section">
-        @if (advertisement.imageList && advertisement.imageList.length > 0) {
+        @if (advertisement.imagesId && advertisement.imagesId.length > 0) {
           <div class="main-image">
-            <img [src]="getImageUrl(advertisement.imageList[0].id)" [alt]="advertisement.title">
+            <img [src]="getImageUrl(advertisement.imagesId[currentImageIndex])" [alt]="advertisement.title">
           </div>
-          @if (advertisement.imageList.length > 1) {
+          @if (advertisement.imagesId.length > 1) {
             <div class="thumbnail-list">
-              @for (image of advertisement.imageList; track image.id) {
-                <div class="thumbnail">
-                  <img [src]="getImageUrl(image.id)" [alt]="advertisement.title">
+              @for (image of advertisement.imagesId; track image; let i = $index) {
+                <div class="thumbnail" [class.active]="i === currentImageIndex" (click)="changeImage(i)">
+                  <img [src]="getImageUrl(image)" [alt]="advertisement.title">
                 </div>
               }
             </div>
           }
         } @else {
-          <div class="no-image" >
+          <div class="no-image">
             <span>Нет изображений</span>
           </div>
         }
@@ -50,7 +50,7 @@
           </div>
           <div class="info-item">
             <span class="label">Статус:</span>
-            <span class="value">{{ advertisement.status ? 'Активно' : 'Неактивно' }}</span>
+            <span class="value">{{ advertisement.status ? 'Есть в наличии' : 'Нет в наличии' }}</span>
           </div>
         </div>
 

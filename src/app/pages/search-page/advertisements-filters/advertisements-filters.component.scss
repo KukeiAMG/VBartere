@@ -1,0 +1,72 @@
+.profile-search-form{
+    padding: 16px 20px;
+    background: none;
+    border: 1px solid var(--light-color);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-gap: 20px;
+    position: relative;
+}
+
+.profile-form {
+    display: contents;
+}
+
+.two-columns {
+    display: contents;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.blee-form-label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &__text {
+        color: var(--light-color);
+        font-size: 16px;
+    }
+}
+
+.blee-form-input {
+    background: none;
+    border: none;
+    color: var(--light-color);
+    font-size: 16px;
+    border-bottom: 1px solid var(--light-color);
+    padding: 8px 0;
+    transition: border-color 0.3s;
+
+    &:focus {
+        outline: none;
+        border-color: var(--accent-color);
+    }
+}
+
+.loading-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid var(--light-color);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

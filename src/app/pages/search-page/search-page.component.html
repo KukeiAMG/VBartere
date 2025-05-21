@@ -1,12 +1,14 @@
 <div class="main-wrapper">
 <app-animated-background></app-animated-background>
+<app-advertisements-filters></app-advertisements-filters>
 <div class="content">
   <div class="tovar-card__wrapper">
-    @for (advertisement of advertisements; track advertisement.id) {
+    @for (advertisement of advertisements(); track advertisement.id) {
       <app-tovar-card
         [advertisement]="advertisement"
         [isInProfile]="false"
         [isMyProfile]="false"
+        [isMine]="isMyAdvertisement(advertisement)"
       ></app-tovar-card>
     }
   </div>

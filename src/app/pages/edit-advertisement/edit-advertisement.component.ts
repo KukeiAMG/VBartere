@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AdvertisementService } from '../../data/services/advertisement.service';
 import { Advertisement, AdvertisementDTO } from '../../data/Interfaces/advertisement.interface';
 import { switchMap } from 'rxjs';
-
+import { ImageService } from '../../data/services/image.service';
 @Component({
   selector: 'app-edit-advertisement',
   standalone: true,
@@ -17,6 +17,7 @@ export class EditAdvertisementComponent implements OnInit {
   advertisementService = inject(AdvertisementService);
   route = inject(ActivatedRoute);
   router = inject(Router);
+  imageService = inject(ImageService);
 
   advertisement: Advertisement | null = null;
   advertisementData = {
@@ -45,8 +46,10 @@ export class EditAdvertisementComponent implements OnInit {
           ownerId: advertisement.ownerId || 1,
           status: advertisement.status || true
         };
-        if (advertisement.imageList && advertisement.imageList.length > 0) {
-          this.previewUrls = advertisement.imageList.map(image => image.filePath);
+        if (advertisement.imagesId && advertisement.imagesId.length > 0) {
+          for(let i = 0; i < advertisement.imagesId.length; i++) {
+            this.previewUrls.push(this.imageService.getImage(advertisement.imagesId[i]));
+          }
         }
         this.isLoading = false;
       },
@@ -78,44 +81,54 @@ export class EditAdvertisementComponent implements OnInit {
   }
 
   removeImage(index: number): void {
+    if (this.advertisement && this.advertisement.imagesId) {
+      this.advertisement.imagesId.splice(index, 1);
+    }
     this.selectedFiles.splice(index, 1);
     this.previewUrls.splice(index, 1);
   }
 
   updateAdvertisement(): void {
-    if (!this.advertisementData.title || !this.advertisementData.description) {
-      this.errorMessage = 'Пожалуйста, заполните все обязательные поля';
-      return;
-    }
-
     if (!this.advertisement) {
       this.errorMessage = 'Объявление не найдено';
       return;
     }
 
-    this.errorMessage = '';
-    this.isLoading = true;
-
     const advertisementDTO: AdvertisementDTO = {
       title: this.advertisementData.title,
       description: this.advertisementData.description,
       subCategoryId: this.advertisementData.subCategoryId,
-      ownerId: this.advertisementData.ownerId,
-      status: this.advertisementData.status
+      ownerId: this.advertisement.ownerId,
+      status: this.advertisement.status
     };
 
-    this.advertisementService.updateAdvertisement(
-      this.advertisement.id,
-      advertisementDTO,
-      this.selectedFiles
-    ).subscribe({
-      next: () => {
-        this.router.navigate(['/profile/me']);
+    const advertisementId = this.advertisement.id;
+
+    // Обновляем поля объявления
+    this.advertisementService.updateAdvertisementFields(advertisementId, advertisementDTO).subscribe({
+      next: (response) => {
+        console.log('Поля объявления успешно обновлены:', response);
+        
+        // Если есть новые изображения, обновляем их
+        if (this.selectedFiles.length > 0) {
+          this.advertisementService.updateAdvertisementImages(advertisementId, this.selectedFiles).subscribe({
+            next: (response) => {
+              console.log('Изображения успешно обновлены:', response);
+              this.router.navigate(['/profile/me']);
+            },
+            error: (error) => {
+              console.error('Ошибка при обновлении изображений:', error);
+              this.errorMessage = error.error?.error || 'Произошла ошибка при обновлении изображений';
+            }
+          });
+        } else {
+          // Если нет новых изображений, просто переходим к просмотру
+          this.router.navigate(['/profile/me']);
+        }
       },
       error: (error) => {
-        console.error('Ошибка при обновлении объявления:', error);
+        console.error('Ошибка при обновлении полей объявления:', error);
         this.errorMessage = error.error?.error || 'Произошла ошибка при обновлении объявления';
-        this.isLoading = false;
       }
     });
   }

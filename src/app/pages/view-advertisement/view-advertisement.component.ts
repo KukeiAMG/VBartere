@@ -5,11 +5,13 @@ import { AdvertisementService } from '../../data/services/advertisement.service'
 import { Advertisement } from '../../data/Interfaces/advertisement.interface';
 import { ImageService } from '../../data/services/image.service';
 import { AuthService } from '../../auth/auth.service';
+import { SvgIconComponent } from '../../common-ui/svg-icon/svg-icon.component';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-view-advertisement',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SvgIconComponent],
   templateUrl: './view-advertisement.component.html',
   styleUrl: './view-advertisement.component.scss'
 })
@@ -20,16 +22,17 @@ export class ViewAdvertisementComponent {
   private imageService = inject(ImageService);
   private authService = inject(AuthService);
 
+  private userId$ = new BehaviorSubject<number | null>(null);
   advertisement: Advertisement | null = null;
   isLoading = true;
   errorMessage = '';
   isOwner = false;
-  currentUserId: number | null = null;
+  currentImageIndex = 0;
 
   constructor() {
-    this.authService.getCurrentUserId().subscribe({
-      next: (userId) => {
-        this.currentUserId = userId;
+    this.authService.getCurrentUserId().subscribe((userId: number | null) => {
+      if (userId) {
+        this.userId$.next(userId);
       }
     });
 
@@ -46,7 +49,9 @@ export class ViewAdvertisementComponent {
     this.advertisementService.getAdvertisementById(id).subscribe({
       next: (advertisement) => {
         this.advertisement = advertisement;
-        this.isOwner = this.currentUserId === advertisement.ownerId;
+        this.userId$.subscribe((userId: number | null) => {
+          this.isOwner = userId === advertisement.ownerId;
+        });
         this.isLoading = false;
       },
       error: (error) => {
@@ -58,7 +63,6 @@ export class ViewAdvertisementComponent {
   }
 
   getImageUrl(imageId: number): string {
-    console.log(imageId);
     return this.imageService.getImage(imageId);
   }
 
@@ -66,5 +70,9 @@ export class ViewAdvertisementComponent {
     if (this.advertisement) {
       this.router.navigate(['/edit-advertisement', this.advertisement.id]);
     }
+  }
+
+  changeImage(index: number): void {
+    this.currentImageIndex = index;
   }
 } 

@@ -14,9 +14,11 @@ export class AuthService {
   router = inject(Router)
   cookieService = inject(CookieService)
   baseApiUrl = `http://localhost:8081/api/users/`
+  baseApiUrl2 = `http://localhost:8081/api/jwt/`
 
   token: string | null = null;
   refreshToken: string | null = null;
+  currentUserId: number | null = null;
 
   get isAuth(){
     if(!this.token){
@@ -27,21 +29,9 @@ export class AuthService {
   }
 
   getCurrentUserId(): Observable<number> {
-    // Получаем токен из хранилища
-    const token = this.getAuthToken();
-
-    if (!token) {
-      return throwError(() => new Error('Токен авторизации не найден'));
-    }
-
-    // Создаем параметры запроса
-    const params = new HttpParams().set('token', token);
-
     return this.http.get<number>(
-      `${this.baseApiUrl}getCurrentUserId`,
-      { params }
-    ).pipe(
-    );
+      `${this.baseApiUrl2}getCurrentUserId`
+    )
   }
 
   private getAuthToken(): string {
@@ -88,12 +78,18 @@ export class AuthService {
     this.cookieService.deleteAll()
     this.token = null;
     this.refreshToken = null;
+    this.currentUserId = null;
     this.router.navigate(['/login'])
   }
 
   saveTokens(res: TokenResponse) {
     this.token = res.accessToken;
     this.refreshToken = res.refreshToken;
+    this.getCurrentUserId().subscribe({
+      next: (userId) => {
+        this.currentUserId = userId;
+      }
+    });
 
     this.cookieService.set('token', this.token);
     this.cookieService.set('refreshToken', this.refreshToken!);

@@ -52,7 +52,7 @@ export class RegisterPageComponent {
         this.authService.register(registerData)
           .subscribe({
             next: (res) => {
-              this.router.navigate(['']);
+              this.router.navigate(['/login']);
             },
             error: (err) => {
               // Обработка ошибок от сервера

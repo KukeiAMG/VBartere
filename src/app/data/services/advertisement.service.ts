@@ -107,25 +107,62 @@ export class AdvertisementService {
     );
   }
 
-  // Поиск объявлений
-  searchAdvertisements(query: string): Observable<Advertisement[]> {
-    return this.http.get<Advertisement[]>(`${this.baseApiUrl}search`, {
-      params: { query }
+  // Фильтрация объявлений
+  filterAdvertisements(filters: {
+    title?: string;
+    description?: string;
+    subCategoryId?: number;
+    sortBy?: 'А-я' | 'Я-а' ;
+  }): Observable<Advertisement[]> {
+    return this.getAllAdvertisements().pipe(
+      map(advertisements => {
+        let filtered = [...advertisements];
+
+        // Фильтрация по названию
+        if (filters.title) {
+          filtered = filtered.filter(ad => 
+            ad.title.toLowerCase().includes(filters.title!.toLowerCase())
+          );
+        }
+
+        // Фильтрация по описанию
+        if (filters.description) {
+          filtered = filtered.filter(ad => 
+            ad.description.toLowerCase().includes(filters.description!.toLowerCase())
+          );
+        }
+
+        // Фильтрация по категории
+        if (filters.subCategoryId) {
+          filtered = filtered.filter(ad => ad.subCategoryId === filters.subCategoryId);
+        }
+
+        // Сортировка
+        if (filters.sortBy) {
+          switch (filters.sortBy) {
+            case 'А-я':
+              filtered.sort((a, b) => a.title.localeCompare(b.title));
+              break;
+            case 'Я-а':
+              filtered.sort((a, b) => b.title.localeCompare(a.title));
+              break;
+          }
+        }
+
+        return filtered;
+      })
+    );
+  }
+
+  updateAdvertisementFields(id: number, advertisementDTO: AdvertisementDTO): Observable<AdvertisementDTO> {
+    return this.http.put<AdvertisementDTO>(`${this.baseApiUrl}${id}/update-fields`, advertisementDTO);
+  }
+
+  updateAdvertisementImages(id: number, files: File[]): Observable<AdvertisementDTO> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
     });
-  }
-
-  // Добавить объявление в избранное
-  addToFavorites(advertisementId: number): Observable<void> {
-    return this.http.post<void>(`${this.baseApiUrl}${advertisementId}favorite`, {});
-  }
-
-  // Удалить объявление из избранного
-  removeFromFavorites(advertisementId: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseApiUrl}${advertisementId}favorite`);
-  }
-
-  // Получить избранные объявления
-  getFavoriteAdvertisements(): Observable<Advertisement[]> {
-    return this.http.get<Advertisement[]>(`${this.baseApiUrl}favorites`);
+    return this.http.put<AdvertisementDTO>(`${this.baseApiUrl}${id}/update-images`, formData);
   }
 } 

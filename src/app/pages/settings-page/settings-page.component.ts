@@ -55,8 +55,6 @@ export class SettingsPageComponent {
     }
 
     try {
-      const userId = await lastValueFrom(this.authService.getCurrentUserId().pipe(take(1)));
-
       // Создаем DTO только с нужными полями (защита от лишних данных)
       const profileData = {
         name: this.form.value.name,
@@ -69,7 +67,7 @@ export class SettingsPageComponent {
       // Отправляем запрос на обновление
       const updatedProfile = await lastValueFrom(
         //@ts-ignore
-        this.profileService.patchProfile(userId, profileData).pipe(
+        this.profileService.patchProfile(profileData).pipe(
           take(1) // Берем только первый результат
         )
       );

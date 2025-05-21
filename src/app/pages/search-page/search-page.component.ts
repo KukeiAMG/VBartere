@@ -6,11 +6,15 @@ import {AnimatedBackgroundComponent} from '../../my-shenanigans/animated-backgro
 import {RouterOutlet} from '@angular/router';
 import { AdvertisementService } from '../../data/services/advertisement.service';
 import { Advertisement } from '../../data/Interfaces/advertisement.interface';
+import { AdvertisementsFiltersComponent } from './advertisements-filters/advertisements-filters.component';
+import { FilterService } from '../../data/services/filter.service';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-search-page',
   standalone: true,
   imports: [
+    AdvertisementsFiltersComponent,
     TovarCardComponent,
     AnimatedBackgroundComponent,
     RouterOutlet
@@ -20,12 +24,23 @@ import { Advertisement } from '../../data/Interfaces/advertisement.interface';
 })
 export class SearchPageComponent {
   advertisementService = inject(AdvertisementService)
-  advertisements : Advertisement[] = []
+  filterService = inject(FilterService)
+  authService = inject(AuthService)
+  advertisements = this.filterService.getFilteredAdvertisements()
+  currentUserId: number | null = null;
 
   constructor(){
     this.advertisementService.getAllAdvertisements()
       .subscribe(val => {
-        this.advertisements = val
+        this.filterService.setFilteredAdvertisements(val)
       })
+    
+    this.authService.getCurrentUserId().subscribe(userId => {
+      this.currentUserId = userId;
+    });
+  }
+
+  isMyAdvertisement(advertisement: Advertisement): boolean {
+    return this.currentUserId === advertisement.ownerId;
   }
 }

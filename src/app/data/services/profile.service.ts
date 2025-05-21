@@ -64,7 +64,6 @@ export class ProfileService {
       'email',
       'phoneNumber',
       'avatarUrl',
-      // другие разрешенные поля
     ];
 
     const result: Partial<Profile> = {};
@@ -78,22 +77,11 @@ export class ProfileService {
     return result;
   }
 
-  patchProfile(userId: number, profileData: Partial<Profile>): Observable<Profile> {
-    // Валидация обязательных полей
-    if (!profileData || !userId) {
-      return throwError(() => new Error('ID пользователя и данные профиля обязательны'));
-    }
-
-    // Подготовка заголовков
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getAuthToken()}` // Добавляем токен авторизации
-    });
+  patchProfile(profileData: Partial<Profile>): Observable<Profile> {
 
     return this.http.put<Profile>(
-      `${this.baseApiUrl}${userId}`,
-      profileData,
-      { headers }
+      `${this.baseApiUrl}update-my-account`,
+      profileData
     ).pipe(
       catchError(error => {
         console.error('Ошибка при обновлении профиля:', error);

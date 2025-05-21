@@ -57,6 +57,13 @@ export class CreateAdvertisementComponent {
   }
 
 createAdvertisement(): void {
+  const userId = this.authService.currentUserId;
+  if (!userId) {
+    console.error('Пользователь не авторизован');
+    this.errorMessage = 'Ошибка аутентификации';
+    return;
+  }
+
   if (!this.advertisementData.title || !this.advertisementData.description) {
     this.errorMessage = 'Пожалуйста, заполните все обязательные поля';
     return;
@@ -64,34 +71,26 @@ createAdvertisement(): void {
 
   this.errorMessage = '';
   
-  this.authService.getCurrentUserId().subscribe({
-    next: (userId) => {
-      const advertisementDTO: AdvertisementDTO = {
-        title: this.advertisementData.title,
-        description: this.advertisementData.description,
-        subCategoryId: this.advertisementData.subCategoryId,
-        ownerId: userId,
-        status: true
-      };
+  const advertisementDTO: AdvertisementDTO = {
+    title: this.advertisementData.title,
+    description: this.advertisementData.description,
+    subCategoryId: this.advertisementData.subCategoryId,
+    ownerId: userId,
+    status: true
+  };
 
-      this.advertisementService.createAdvertisement(
-        advertisementDTO as AdvertisementDTO,
-        this.selectedFiles,
-        userId
-      ).subscribe({
-        next: (response) => {
-          console.log('Объявление успешно создано:', response);
-          this.router.navigate(['/']);
-        },
-        error: (error) => {
-          console.error('Ошибка при создании объявления:', error);
-          this.errorMessage = error.error?.error || 'Произошла ошибка при создании объявления';
-        }
-      });
+  this.advertisementService.createAdvertisement(
+    advertisementDTO as AdvertisementDTO,
+    this.selectedFiles,
+    userId
+  ).subscribe({
+    next: (response) => {
+      console.log('Объявление успешно создано:', response);
+      this.router.navigate(['/']);
     },
-    error: (err) => {
-      console.error('Ошибка получения user ID:', err);
-      this.errorMessage = 'Ошибка аутентификации';
+    error: (error) => {
+      console.error('Ошибка при создании объявления:', error);
+      this.errorMessage = error.error?.error || 'Произошла ошибка при создании объявления';
     }
   });
 }
