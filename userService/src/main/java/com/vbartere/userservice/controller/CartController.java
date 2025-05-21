@@ -1,29 +1,46 @@
 package com.vbartere.userservice.controller;
 
 import com.vbartere.Shared.Kafka.DTO.Cart.CartDTO;
+import com.vbartere.userservice.exceptions.InvalidTokenException;
 import com.vbartere.userservice.service.CartService;
+import com.vbartere.userservice.service.UserService;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cart")
 public class CartController {
 
     private final CartService cartService;
+    private final UserService userService;
 
-    public CartController(CartService cartService) {
+    public CartController(CartService cartService, UserService userService) {
         this.cartService = cartService;
+        this.userService = userService;
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<CartDTO> getCartByUserId(@PathVariable("userId") Long userId) {
-        CartDTO cartDTO = cartService.getCartByUserId(userId);
-        return ResponseEntity.ok(cartDTO);
-    }
+    @GetMapping("/my-cart")
+    public ResponseEntity<?> getCartByUserId(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new InvalidTokenException("Невалидный формат токена");
+            }
 
-    @DeleteMapping("/{id}/clear")
-    public ResponseEntity<Void> clearCart(@PathVariable Long id) {
-        cartService.clearCart(id);
-        return ResponseEntity.noContent().build();
+            String token = authHeader.substring(7);
+
+            Long userId = userService.getUserIdByToken(token);
+
+            CartDTO cartDTO = cartService.getCartByUserId(userId);
+            return ResponseEntity.ok(cartDTO);
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 }

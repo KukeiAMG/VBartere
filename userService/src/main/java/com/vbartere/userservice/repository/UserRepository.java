@@ -19,4 +19,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.phoneNumber = :phoneNumber")
     Optional<User> findByPhoneNumberWithRoles(@Param("phoneNumber") String phoneNumber);
+
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.cart c LEFT JOIN FETCH c.advertisementList WHERE u.id = :id")
+    Optional<User> findByIdWithCartAndAds(@Param("id") Long id);
 }

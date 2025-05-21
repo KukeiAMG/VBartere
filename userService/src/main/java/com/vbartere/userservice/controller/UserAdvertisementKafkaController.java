@@ -2,6 +2,7 @@ package com.vbartere.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.Shared.Kafka.DTO.UserService.UserDTO;
+import com.vbartere.Shared.Kafka.Enum.CartEventType;
 import com.vbartere.Shared.Kafka.Events.CartEvent;
 import com.vbartere.userservice.Kafka.Producers.SendCartRequest;
 import com.vbartere.userservice.service.CartService;
@@ -37,17 +38,69 @@ public class UserAdvertisementKafkaController {
         try {
             String token = jwtToken.startsWith("Bearer ") ? jwtToken.substring(7) : jwtToken;
             Long userId = userService.getUserIdByToken(token);
-            //cartService.addProductToCart(userId, advertisementId);
+
             UserDTO userDTO = userService.getById(userId);
             System.out.println("Controller userId = " + userId);
 
-            CartEvent cartEvent = new CartEvent(userId, userDTO.isBanned(), advertisementId);
+            CartEvent cartEvent = new CartEvent(userId,
+                    userDTO.isBanned(),
+                    advertisementId,
+                    CartEventType.ADD_ADVERTISEMENT_TO_CART
+            );
             sendCartRequest.sendCartRequest(objectMapper.writeValueAsString(cartEvent));
 
             return ResponseEntity.ok("Отправлен запрос на добавление в корзину");
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при добавлении объявления в корзину");
+        }
+    }
+
+    @PutMapping("/{advertisementId}/remove")
+    public ResponseEntity<String> removeAdvertisementFromCart(@PathVariable(name = "advertisementId") Long advertisementId,
+                                                         @RequestHeader(name = "Authorization") String jwtToken) {
+        try {
+            String token = jwtToken.startsWith("Bearer ") ? jwtToken.substring(7) : jwtToken;
+            Long userId = userService.getUserIdByToken(token);
+
+            UserDTO userDTO = userService.getById(userId);
+            System.out.println("Controller userId = " + userId);
+
+            CartEvent cartEvent = new CartEvent(userId,
+                    userDTO.isBanned(),
+                    advertisementId,
+                    CartEventType.REMOVE_ADVERTISEMENT_FROM_CART
+            );
+            sendCartRequest.sendCartRequest(objectMapper.writeValueAsString(cartEvent));
+
+            return ResponseEntity.ok("Отправлен запрос на удаления объявления");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при добавлении объявления в корзину");
+        }
+    }
+
+    @DeleteMapping("/cart/clear")
+    public ResponseEntity<String> clearCart(@RequestHeader("Authorization") String jwtToken) {
+        try {
+            String token = jwtToken.startsWith("Bearer ") ? jwtToken.substring(7) : jwtToken;
+            Long userId = userService.getUserIdByToken(token);
+
+            UserDTO userDTO = userService.getById(userId);
+            System.out.println("Controller userId = " + userId);
+
+            CartEvent cartEvent = new CartEvent(userId,
+                    userDTO.isBanned(),
+                    null,
+                    CartEventType.CLEAR_CART
+            );
+            sendCartRequest.sendCartRequest(objectMapper.writeValueAsString(cartEvent));
+
+            return ResponseEntity.ok("Корзина успешно очищена.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Ошибка при очистке корзины.");
         }
     }
 }
