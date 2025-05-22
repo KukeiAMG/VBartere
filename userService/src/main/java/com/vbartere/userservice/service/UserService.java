@@ -6,10 +6,13 @@ import com.vbartere.Shared.Kafka.DTO.AdminService.AdminUserDTO;
 import com.vbartere.Shared.Kafka.DTO.Gateway.UserInfoDTO;
 import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import com.vbartere.Shared.Kafka.DTO.UserService.UserDTO;
+import com.vbartere.Shared.Kafka.Enum.CartEventType;
 import com.vbartere.Shared.Kafka.Enum.UserEventType;
+import com.vbartere.Shared.Kafka.Events.CartEvent;
 import com.vbartere.Shared.Kafka.Events.UserEvent;
 import com.vbartere.userservice.DTO.UserUpdateDTO;
 import com.vbartere.userservice.Kafka.Producers.SendAdminRequest;
+import com.vbartere.userservice.Kafka.Producers.SendAdvertisementRequest;
 import com.vbartere.userservice.Kafka.Producers.SendNotificationRequest;
 import com.vbartere.userservice.Kafka.Producers.SendReferralRequest;
 import com.vbartere.userservice.Mapper.AdminMapper;
@@ -40,7 +43,6 @@ public class UserService {
     private final JwtService jwtService;
     private final RoleRepository roleRepository;
     private final CartRepository cartRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -50,13 +52,13 @@ public class UserService {
     private final SendAdminRequest sendAdminRequest;
     private final SendNotificationRequest sendNotificationRequest;
     private final SendReferralRequest sendReferralRequest;
+    private final SendAdvertisementRequest sendAdvertisementRequest;
 
-    public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository, CartRepository cartRepository, KafkaTemplate<String, String> kafkaTemplate, PasswordEncoder passwordEncoder, ObjectMapper objectMapper, RefreshTokenRepository refreshTokenRepository, UserMapper userMapper, AdminMapper adminMapper, SendAdminRequest sendAdminRequest, SendNotificationRequest sendNotificationRequest, SendReferralRequest sendReferralRequest) {
+    public UserService(UserRepository userRepository, JwtService jwtService, RoleRepository roleRepository, CartRepository cartRepository, PasswordEncoder passwordEncoder, ObjectMapper objectMapper, RefreshTokenRepository refreshTokenRepository, UserMapper userMapper, AdminMapper adminMapper, SendAdminRequest sendAdminRequest, SendNotificationRequest sendNotificationRequest, SendReferralRequest sendReferralRequest, SendAdvertisementRequest sendAdvertisementRequest) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.roleRepository = roleRepository;
         this.cartRepository = cartRepository;
-        this.kafkaTemplate = kafkaTemplate;
         this.passwordEncoder = passwordEncoder;
         this.objectMapper = objectMapper;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -65,6 +67,7 @@ public class UserService {
         this.sendAdminRequest = sendAdminRequest;
         this.sendNotificationRequest = sendNotificationRequest;
         this.sendReferralRequest = sendReferralRequest;
+        this.sendAdvertisementRequest = sendAdvertisementRequest;
     }
 
     @Transactional(readOnly = true)
@@ -112,7 +115,8 @@ public class UserService {
                 user.getEmail(),
                 UserEventType.USER_LOGIN
         );
-        //kafkaTemplate.send("user.event", objectMapper.writeValueAsString(userEvent));
+        userEvent.setDescription("Выполнен вход в ваш аккаунт");
+
         sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
         Map<String, String> response = new HashMap<>();
         response.put("accessToken", accessToken);
@@ -294,13 +298,25 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long id) throws JsonProcessingException {
+        UserDTO userDTO = getById(id);
+
         userRepository.deleteById(id);
 
         AdminUserDTO adminUserDTO = new AdminUserDTO();
         adminUserDTO.setId(id);
         adminUserDTO.setEvent(UserEventType.USER_DELETED);
 
-        //kafkaTemplate.send("administration.user.event", objectMapper.writeValueAsString(adminUserDTO));
+        UserEvent userEvent = new UserEvent(
+                id,
+                userDTO.getName(),
+                userDTO.getEmail(),
+                UserEventType.USER_DELETED
+        );
+        userEvent.setDescription("Пользователь удалил свой аккаунт");
+        sendAdvertisementRequest.sendAdvertisementRequest(
+                objectMapper.writeValueAsString(userEvent)
+        );
+
         sendAdminRequest.updateAdminAsync(adminUserDTO);
     }
 }
