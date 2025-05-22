@@ -21,7 +21,7 @@ public class CacheService {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    @KafkaListener(topics = "cache-advertisement", groupId = "cache-service-group")
+    @KafkaListener(topics = "cache.advertisement", groupId = "cache-service-group")
     public void listenAdvertisementCache(String advertisementDTO) throws JsonProcessingException {
         AdvertisementDTO newAdvertisementDTO = objectMapper.readValue(advertisementDTO, AdvertisementDTO.class);
         System.out.println(objectMapper.writeValueAsString(newAdvertisementDTO));
