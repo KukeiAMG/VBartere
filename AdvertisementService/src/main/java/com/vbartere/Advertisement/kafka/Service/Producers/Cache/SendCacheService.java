@@ -24,16 +24,17 @@ public class SendCacheService {
     }
 
     @Async("taskExecutor")
-    public void sendCacheRequest(String advertisementId) {
-        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, advertisementId);
+    public void sendCacheRequest(String advertisementDTO) {
+        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, advertisementDTO);
 
         future.whenComplete((result, ex) -> {
             if (ex != null) {
                 System.err.println("ошибка при отправке сообщения: " + ex.getMessage());
             } else {
                 RecordMetadata metadata = result.getRecordMetadata();
-                System.out.printf("Топик: %s, Партиция: %d, Оффсет: %d%n",
-                        metadata.topic(), metadata.partition(), metadata.offset());
+                System.out.println("Сообщение отправлено в " + metadata.topic() +
+                        ", partition: " + metadata.partition() +
+                        ", offset: " + metadata.offset());
             }
         });
     }

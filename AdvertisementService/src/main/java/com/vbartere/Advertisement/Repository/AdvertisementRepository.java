@@ -20,4 +20,5 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
             "WHERE a.buyersId = :buyersId AND a.status = false")
     List<Advertisement> findByBuyersIdAndStatusFalseWithImages(@Param("buyersId") Long buyersId);
 
+    List<Advertisement> findAdvertisementsByOwnerId(Long ownerId);
 }

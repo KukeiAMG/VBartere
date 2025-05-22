@@ -100,25 +100,36 @@ public class KafkaCartEventConsumer {
                         AdvertisementDTO updatedDto = advertisementMapper.advertisementToDTO(persistentAd);
                         sendCacheService.updateCacheAsync(updatedDto);
 
-                        AdminAdvertisementDTO adminAdvertisementDTO = advertisementMapper.toAdminDto(persistentAd, AdvertisementEventType.ADVERTISEMENT_UPDATED);
+                        AdminAdvertisementDTO adminAdvertisementDTO = advertisementMapper.toAdminDto(
+                                persistentAd,
+                                AdvertisementEventType.ADVERTISEMENT_UPDATED);
 
                         System.out.println("\nОбработка события: " + event + "\nТовар: " + persistentAd.getId());
 
                         missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                                new CartResult(event.getUserId(), event.getAdvertisementId(), true, UserEventType.USER_ADD_ADVERTISEMENT_TO_CART)
+                                new CartResult(event.getUserId(),
+                                        event.getAdvertisementId(),
+                                        true,
+                                        UserEventType.USER_ADD_ADVERTISEMENT_TO_CART)
                         ));
                         sendAdminService.sendAdminRequest(objectMapper.writeValueAsString(adminAdvertisementDTO));
                     } else {
                         System.out.println("Данное объявление снято с публикации");
                         missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                                new CartResult(event.getUserId(), event.getAdvertisementId(), false, UserEventType.USER_ADD_ADVERTISEMENT_TO_CART)
+                                new CartResult(event.getUserId(),
+                                        event.getAdvertisementId(),
+                                        false,
+                                        UserEventType.USER_ADD_ADVERTISEMENT_TO_CART)
                         ));
                     }
 
                 } catch (EntityNotFoundException e) {
                     System.out.println("Объявление с ID " + event.getAdvertisementId() + " не найдено.");
                     missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                            new CartResult(event.getUserId(), event.getAdvertisementId(), false, UserEventType.USER_DID_NOT_FIND_THE_ADVERTISEMENT)
+                            new CartResult(event.getUserId(),
+                                    event.getAdvertisementId(),
+                                    false,
+                                    UserEventType.USER_DID_NOT_FIND_THE_ADVERTISEMENT)
                     ));
                 } catch (Exception e) {
                     System.out.println("Ошибка обработки события: " + e.getMessage());
@@ -142,12 +153,18 @@ public class KafkaCartEventConsumer {
                     sendAdminService.sendAdminRequest(objectMapper.writeValueAsString(adminAdvertisementDTO));
 
                     missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                            new CartResult(event.getUserId(), event.getAdvertisementId(), true, UserEventType.USER_REMOVE_ADVERTISEMENT_FROM_CART)
+                            new CartResult(event.getUserId(),
+                                    event.getAdvertisementId(),
+                                    true,
+                                    UserEventType.USER_REMOVE_ADVERTISEMENT_FROM_CART)
                     ));
                 } catch (EntityNotFoundException e) {
                     System.out.println("Объявление не найдено: " + event.getAdvertisementId());
                     missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                            new CartResult(event.getUserId(), event.getAdvertisementId(), false, UserEventType.USER_DID_NOT_FIND_THE_ADVERTISEMENT)
+                            new CartResult(event.getUserId(),
+                                    event.getAdvertisementId(),
+                                    false,
+                                    UserEventType.USER_DID_NOT_FIND_THE_ADVERTISEMENT)
                     ));
                 } catch (Exception e) {
                     System.err.println("Ошибка при удалении из корзины: " + e.getMessage());
@@ -182,10 +199,12 @@ public class KafkaCartEventConsumer {
                         sendAdminService.updateAdminAsync(adminAdvertisementDTO);
                     }
 
-                    // Уведомление в Kafka
-                    CartResult result = new CartResult(userId, null, true, UserEventType.USER_CLEARED_HIS_CART);
-                    String json = objectMapper.writeValueAsString(result);
-                    missingAdvertisementService.sendMissingAdvertisementRequest(json);
+                    missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
+                            new CartResult(userId,
+                                    null,
+                                    true,
+                                    UserEventType.USER_CLEARED_HIS_CART)
+                    ));
 
                     System.out.println("Корзина очищена для пользователя: " + userId);
                 } catch (Exception e) {

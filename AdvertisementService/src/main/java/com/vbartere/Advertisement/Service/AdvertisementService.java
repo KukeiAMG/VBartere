@@ -110,7 +110,7 @@ public class AdvertisementService {
         try {
             CompletableFuture<AdvertisementDTO> future = cacheAwaiterService.awaitCache(id);
 
-            sendCacheService.sendCacheRequest(String.valueOf(id));
+            sendCacheService.sendCacheRequest(objectMapper.writeValueAsString(dto));
 
             return future.get(4, TimeUnit.SECONDS);
         } catch (Exception e) {
