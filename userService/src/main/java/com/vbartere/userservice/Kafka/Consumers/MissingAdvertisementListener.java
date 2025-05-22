@@ -40,9 +40,31 @@ public class MissingAdvertisementListener {
     public void handleCartEvent(String message) throws JsonProcessingException {
         CartResult result = objectMapper.readValue(message, CartResult.class);
         System.out.println(result);
-        User user = userRepository.findByIdWithCartAndAds(result.getUserId()).orElseThrow(
-                () -> new EntityNotFoundException("Пользователь не найден в БД")
-        );
+
+        User user;
+        try {
+            user = userRepository.findByIdWithCartAndAds(result.getUserId()).orElseThrow(
+                    () -> new EntityNotFoundException("Пользователь не найден в БД")
+            );
+        } catch (EntityNotFoundException e) {
+            if (result.getEventType() == UserEventType.USER_REMOVE_HIS_ADVERTISEMENT) {
+                System.out.println("Вы успешно удалили свое объявление " + result.getAdvertisementId());
+                cartService.removeAdvertisementFromAllCarts(result.getAdvertisementId());
+
+                UserEvent userEvent = new UserEvent(
+                        result.getUserId(),
+                        "Удалённый пользователь",
+                        "unknown@system",
+                        UserEventType.USER_REMOVE_HIS_ADVERTISEMENT
+                );
+                userEvent.setDescription("Пользователь удалил аккаунт и свои объявления");
+
+                sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+                return;
+            } else {
+                return;
+            }
+        }
         AdminUserDTO adminUserDTO = adminMapper.toDto(user, UserEventType.USER_UPDATED);
 
         if (!user.isBanned()) {

@@ -33,7 +33,9 @@ public class SendCartRequest {
                 System.err.println("ошибка при отправке сообщения: " + ex.getMessage());
             } else {
                 RecordMetadata metadata = result.getRecordMetadata();
-                System.out.println("сообщение отправлено в " + metadata.topic());
+                System.out.println("Сообщение отправлено в " + metadata.topic() +
+                        ", partition: " + metadata.partition() +
+                        ", offset: " + metadata.offset());
             }
         });
     }

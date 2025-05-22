@@ -1,8 +1,6 @@
 package com.vbartere.userservice.Kafka.Producers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -12,20 +10,21 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-public class SendReferralRequest {
+public class SendAdvertisementRequest {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    private final String TOPIC = "user.registration.referral";
+    private final String TOPIC = "user.advertisement.events";
 
-    public SendReferralRequest(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
+    public SendAdvertisementRequest(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
     }
 
+
     @Async("taskExecutor")
-    public void sendReferralRequest(String userReferralDTO) {
-        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, userReferralDTO);
+    public void sendAdvertisementRequest(String userEvent) {
+        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, userEvent);
 
         future.whenComplete((result, ex) -> {
             if (ex != null) {
@@ -37,14 +36,5 @@ public class SendReferralRequest {
                         ", offset: " + metadata.offset());
             }
         });
-    }
-
-    public void updateReferralAsync(UserReferralDTO userReferralDTO) {
-        try {
-            String json = objectMapper.writeValueAsString(userReferralDTO);
-            sendReferralRequest(json);
-        } catch (JsonProcessingException e) {
-            System.err.println("ошибка отправки сообщения: " + e.getMessage());
-        }
     }
 }
