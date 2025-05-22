@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule } from '@angular/forms';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AdvertisementService } from '../../../data/services/advertisement.service';
-import { debounceTime, switchMap, tap } from 'rxjs/operators';
+import { debounceTime, switchMap, tap, map } from 'rxjs/operators';
 import { FilterService } from '../../../data/services/filter.service';
 
 @Component({
@@ -22,7 +22,7 @@ export class AdvertisementsFiltersComponent {
 
   searchForm = this.fb.group({
     title: [''],
-    subCategoryId: [''],
+    subCategoryId: [null as number | null],
     description: [''],
     sortBy: ['']
   });
@@ -31,6 +31,10 @@ export class AdvertisementsFiltersComponent {
     this.searchForm.valueChanges.pipe(
       tap(() => this.isLoading = true),
       debounceTime(500),
+      map(formValue => ({
+        ...formValue,
+        subCategoryId: formValue.subCategoryId ? Number(formValue.subCategoryId) : null
+      })),
       switchMap(formValue => this.advertisementService.filterAdvertisements(formValue as any)),
       tap(() => this.isLoading = false)
     ).subscribe(filteredAds => {

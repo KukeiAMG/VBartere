@@ -1,10 +1,7 @@
 import {Component, inject, Input, Output, EventEmitter} from '@angular/core';
-import {Profile} from '../../data/Interfaces/profile.interface';
-import {ImgUrlsPipe} from '../../helpers/pipes/img-urls.pipe';
 import { Advertisement, AdvertisementDTO } from '../../data/Interfaces/advertisement.interface';
 import { AdvertisementService } from '../../data/services/advertisement.service';
 import { AuthService } from '../../auth/auth.service';
-import { tap } from 'rxjs';
 import { RouterModule } from '@angular/router';
 import { SvgIconComponent } from '../svg-icon/svg-icon.component';
 import { ImageService } from '../../data/services/image.service';
@@ -13,7 +10,6 @@ import { CartService } from '../../data/services/cart.service';
 @Component({
   selector: 'app-tovar-card',
   imports: [
-    ImgUrlsPipe,
     RouterModule,
     SvgIconComponent
   ],
@@ -26,6 +22,8 @@ export class TovarCardComponent {
   @Input() public isMyProfile = false;
   @Input() public isInCart = false;
   @Input() public isMine = false;
+  isAddedToCart = false;
+  showDeleteConfirm = false;
   selectedFiles: File[] = [];
   authService = inject(AuthService);
   imageService = inject(ImageService);
@@ -42,11 +40,12 @@ export class TovarCardComponent {
   }
 
   addToCart(): void {
+    this.isAddedToCart = true;
     console.log('TovarCard: Начало добавления в корзину', this.advertisement);
     this.authService.getCurrentUserId().subscribe(userId => {
       console.log('TovarCard: Получен ID пользователя:', userId);
       if (userId) {
-        this.cartService.addToCart(userId, this.advertisement.id).subscribe({
+        this.cartService.addToCart(this.advertisement.id).subscribe({
           next: (response) => {
             console.log('TovarCard: Товар успешно добавлен в корзину', response);
             this.cartService.updateCart();
@@ -82,8 +81,7 @@ export class TovarCardComponent {
 
     this.advertisementService.createAdvertisement(
       advertisementData as AdvertisementDTO,
-      this.selectedFiles,
-      userId
+      this.selectedFiles
     ).subscribe({
       next: (response) => {
         console.log('Объявление успешно создано:', response);
@@ -92,5 +90,19 @@ export class TovarCardComponent {
         console.error('Ошибка при создании объявления:', error);
       }
     });
+  }
+
+  deleteAdvertisement(): void {
+    if (confirm('Вы уверены, что хотите удалить это объявление?')) {
+      this.advertisementService.deleteAdvertisement(this.advertisement.id).subscribe({
+        next: () => {
+          console.log('Объявление успешно удалено');
+          window.location.reload();
+        },
+        error: (error) => {
+          console.error('Ошибка при удалении объявления:', error);
+        }
+      });
+    }
   }
 }

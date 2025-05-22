@@ -1,35 +1,32 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, signal, effect} from '@angular/core';
 import {SvgIconComponent} from '../svg-icon/svg-icon.component';
-import {AsyncPipe, JsonPipe, NgForOf} from '@angular/common';
-import {SubscribedItemsComponent} from './subscribed-items/subscribed-items.component';
+import {CommonModule} from '@angular/common';
 import {RouterLink, RouterLinkActive} from '@angular/router';
 import {ProfileService} from '../../data/services/profile.service';
-import {firstValueFrom} from 'rxjs';
-import {ImgUrlsPipe} from '../../helpers/pipes/img-urls.pipe';
+import {ImageService} from '../../data/services/image.service';
+import {AuthService} from '../../auth/auth.service';
+import {switchMap, take} from 'rxjs';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
   imports: [
     SvgIconComponent,
-    NgForOf,
-    SubscribedItemsComponent,
+    CommonModule,
     RouterLink,
-    AsyncPipe,
-    JsonPipe,
-    ImgUrlsPipe,
     RouterLinkActive
-
   ],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
-  profileService: ProfileService = inject(ProfileService)
-
-  subscribed$ = this.profileService.getSubscribedShortList()
-
+  imageService = inject(ImageService);
+  profileService = inject(ProfileService);
+  authService = inject(AuthService);
+  
   me = this.profileService.me;
+  imageUrl = signal<string>('/assets/images/avatar_placeholder.png');
+  balance = 0; // Временное значение, будет заменено на реальное с бэкенда
 
   menuItems = [
     {
@@ -40,7 +37,7 @@ export class SidebarComponent {
     {
       label: 'Чаты',
       icon: 'chat',
-      link: 'chats'
+      link: 'chat'
     },
     {
       label: 'Поиск',
@@ -52,10 +49,18 @@ export class SidebarComponent {
       icon: 'cart',
       link: 'cart'
     }
-  ]
+  ];
 
-  ngOnInit(): void {
-    firstValueFrom(this.profileService.getMe())
+  constructor() {
+    this.profileService.loadMe(true);
+
+    effect(() => {
+      this.authService.getCurrentUserId().pipe(
+        take(1),
+        switchMap(userId => this.imageService.getProfileImage(userId))
+      ).subscribe(url => {
+        this.imageUrl.set(url);
+      });
+    });
   }
-
 }

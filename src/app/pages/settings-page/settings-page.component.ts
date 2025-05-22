@@ -72,6 +72,10 @@ export class SettingsPageComponent {
         )
       );
 
+      // Обновляем данные в сервисе
+      this.profileService.me.set(updatedProfile);
+      this.profileService.loadMe(true);
+
       this.router.navigate(['profile/me']);
 
     } catch (error) {

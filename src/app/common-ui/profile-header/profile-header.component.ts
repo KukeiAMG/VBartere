@@ -1,15 +1,32 @@
-import {Component, input} from '@angular/core';
+import {Component, inject, input, signal, effect} from '@angular/core';
 import {Profile} from '../../data/Interfaces/profile.interface';
-import {ImgUrlsPipe} from '../../helpers/pipes/img-urls.pipe';
+import { ImageService } from '../../data/services/image.service';
+import { Observable, take, switchMap } from 'rxjs';
+import { CommonModule, AsyncPipe } from '@angular/common';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-profile-header',
-  imports: [
-    ImgUrlsPipe
-  ],
+  standalone: true,
+  imports: [CommonModule, AsyncPipe],
   templateUrl: './profile-header.component.html',
   styleUrl: './profile-header.component.scss'
 })
 export class ProfileHeaderComponent {
-  profile = input<Profile>()
+  profile = input.required<Profile>();
+  imageService = inject(ImageService);
+  authService = inject(AuthService);
+  
+  imageUrl = signal<string>('/assets/images/avatar_placeholder.png');
+
+  constructor() {
+    effect(() => {
+      this.authService.getCurrentUserId().pipe(
+        take(1),
+        switchMap(userId => this.imageService.getProfileImage(userId))
+      ).subscribe(url => {
+        this.imageUrl.set(url);
+      });
+    });
+  }
 }

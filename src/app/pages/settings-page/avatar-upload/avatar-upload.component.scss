@@ -7,10 +7,51 @@
   border-radius: 4px 4px 0 0;
 }
 
-.avatar{
-  height: 132px;
+.avatar-container {
+  position: relative;
   width: 132px;
+  height: 132px;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
+  object-fit: cover;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--light-color);
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .dropzone{
@@ -19,10 +60,17 @@
   padding: 16px;
   display: grid;
   place-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.05);
+  }
 
   &.fileover{
-    border: 1px dashed var(--click-color);
-
+    border: 1px dashed var(--accent-color);
+    background: rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -30,15 +78,36 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 14px;
 
   svg{
     width: 16px;
     height: 16px;
-    margin-bottom: 14px;
     color: var(--light-color);
   }
 }
 
 .avatar-input{
   display: none;
+}
+
+.error-message {
+  color: var(--error-color);
+  font-size: 14px;
+}
+
+.delete-btn {
+  padding: 8px 16px;
+  background: var(--error-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }

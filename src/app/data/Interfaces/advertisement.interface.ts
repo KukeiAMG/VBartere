@@ -12,7 +12,6 @@ export interface AdvertisementDTO {
   title: string;
   description: string;
   subCategoryId: number;
-  ownerId: number;
   status: boolean;
   imagesId?: number[];
 }

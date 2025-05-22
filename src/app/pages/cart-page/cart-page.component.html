@@ -1,64 +1,62 @@
-<div class="main-wrapper">
+<div class="cart-page">
   <app-animated-background></app-animated-background>
-  <div class="content">
-    <header class="profile-page__header">
-      <h1 class="h4">Корзина</h1>
-      <div class="cart-actions">
-        @if (cartItems.length > 0) {
-          <button class="btn btn-shadow" (click)="clearCart()">
-            Очистить корзину
-            <svg icon="trash" class="trash-icon"></svg>
-          </button>
-        }
+  
+  <div class="cart-container">
+    <h1>Корзина</h1>
+
+    @if (isLoading) {
+      <div class="loading-spinner">
+        <div class="spinner"></div>
       </div>
-    </header>
+    }
 
-    <main class="profile-page__body">
-      <div class="user-advertisements">
-        <h3 class="h6 mb16">Товары в корзине</h3>
-        @if (isLoading) {
-          <div class="loading">Загрузка...</div>
-        } @else if (errorMessage) {
-          <div class="error">{{ errorMessage }}</div>
-        } @else if (cartItems.length > 0) {
-          <div class="tovar-card__wrapper">
-            @for (item of cartItems; track item.id) {
-              <app-tovar-card
-                [advertisement]="item"
-                [isInProfile]="false"
-                [isMyProfile]="false"
-                [isInCart]="true"
-              ></app-tovar-card>
-            }
-          </div>
+    @if (errorMessage) {
+      <div class="error-message">
+        {{ errorMessage }}
+      </div>
+    }
 
-          <div class="cart-summary">
-            <div class="summary-row">
-              <span class="medium-text">Всего товаров:</span>
-              <span class="h6">{{cartItems.length}}</span>
+    @if (!isLoading && !errorMessage) {
+      @if (cartItems.length === 0) {
+        <div class="empty-cart">
+          <p>Ваша корзина пуста</p>
+          <a [routerLink]="['/']">Перейти к объявлениям</a>
+        </div>
+      } @else {
+        <div class="cart-items">
+          @for (item of cartItems; track item.id) {
+            <div class="cart-item" (click)="viewAdvertisement(item.id)" style="cursor: pointer;">
+              <div class="item-image">
+                @if (item.imagesId && item.imagesId.length) {
+                  <img [src]="imageService.getImage(item.imagesId[0])" [alt]="item.title">
+                } @else {
+                  <img src="/assets/images/avatar_placeholder.png" [alt]="item.title">
+                }
+              </div>
+              <div class="item-details">
+                <h3 class="item-title">{{ item.title }}</h3>
+                <p class="item-description">{{ item.description }}</p>
+                <div class="item-category">Категория: {{ item.subCategoryId }}</div>
+              </div>
+              <button 
+                class="remove-btn" 
+                (click)="removeFromCart(item.id); $event.stopPropagation()"
+                [disabled]="isLoading">
+                Удалить
+              </button>
             </div>
-            <button class="btn btn-shadow checkout-btn">
-              Оформить обмен
-            </button>
-          </div>
-        } @else {
-          <div class="empty-cart">
-            <h2 class="h4">Корзина пуста</h2>
-            <p class="medium-text">Добавьте товары для покупки</p>
-            <a [routerLink]="['/']" class="btn btn-shadow">
-              Перейти к поиску
-            </a>
-          </div>
-        }
-      </div>
+          }
+        </div>
 
-      <div class="profile-info">
-        <h3 class="h6 mb16">Информация</h3>
-        <p class="medium-text">
-          Здесь вы можете управлять товарами, которые хотите купить. 
-          Добавляйте товары в корзину, чтобы начать процесс покупки.
-        </p>
-      </div>
-    </main>
+        <div class="cart-actions">
+          <button 
+            class="clear-cart-btn" 
+            (click)="clearCart()"
+            [disabled]="isLoading">
+            Очистить корзину
+          </button>
+        </div>
+      }
+    }
   </div>
 </div> 

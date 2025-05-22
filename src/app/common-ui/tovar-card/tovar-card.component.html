@@ -26,9 +26,15 @@
 
   <div class="tovar-card__action-btns">
     @if (isMine) {
-      <div class="my-item-label">ЭТО ВАШ ТОВАР</div>
+      <div class="my-item-label">Это ваш товар</div>
     } @else if (!isInCart) {
-      <button class="btn" (click)="addToCart(); $event.stopPropagation()">Добавить в корзину</button>
+      <button 
+        class="btn" 
+        [class.btn--added]="isAddedToCart"
+        (click)="addToCart(); $event.stopPropagation()"
+      >
+        {{ isAddedToCart ? 'Добавлено в корзину' : 'Добавить в корзину' }}
+      </button>
     }
   </div>
 </div>
@@ -56,9 +62,14 @@
       </div>
     
       @if (isMyProfile){
-        <a [routerLink]="['/edit-advertisement', advertisement.id]" class="settings-btn">
-          <svg icon="settings"></svg>
-        </a>
+        <div class="profile-actions">
+          <a [routerLink]="['/edit-advertisement', advertisement.id]" class="settings-btn">
+            <svg icon="settings"></svg>
+          </a>
+          <button class="delete-btn" (click)="deleteAdvertisement()">
+            <svg icon="trash"></svg>
+          </button>
+        </div>
       }
     
     </div>

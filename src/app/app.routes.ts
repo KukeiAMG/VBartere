@@ -10,7 +10,7 @@ import {CartPageComponent} from './pages/cart-page/cart-page.component';
 import {CreateAdvertisementComponent} from './pages/create-advertisement/create-advertisement.component';
 import {EditAdvertisementComponent} from './pages/edit-advertisement/edit-advertisement.component';
 import {ViewAdvertisementComponent} from './pages/view-advertisement/view-advertisement.component';
-import {ChatsPageComponent} from './pages/chats-page/chats-page.component';
+import {ExternalRedirectComponent} from './pages/external-redirect/external-redirect.component';
 
 export const routes: Routes = [
   {
@@ -20,10 +20,10 @@ export const routes: Routes = [
       {path: 'profile/:id', component: ProfilePageComponent},
       {path: 'settings', component: SettingsPageComponent},
       {path: 'cart', component: CartPageComponent},
-      {path: 'chats', component: ChatsPageComponent},
       {path: 'create-advertisement', component: CreateAdvertisementComponent},
       {path: 'edit-advertisement/:id', component: EditAdvertisementComponent},
       {path: 'advertisement/:id', component: ViewAdvertisementComponent},
+      {path: 'chat', component: ExternalRedirectComponent},
     ],
     canActivate: [canActivateAuth]
   },

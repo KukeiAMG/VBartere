@@ -1,12 +1,8 @@
-@if (profile(); as profile){
-  @if (profile.avatarUrl) {
-    <img [src]="profile.avatarUrl | imgUrls" alt="">
-  } @else {
-    <img src="/assets/images/avatar_placeholder.png" alt="">
-  }
+@if (profile(); as profileData) {
+  <img [src]="imageUrl()" alt="">
 
   <div class="phoneNumber-and-name">
-    <h1 class="h4 mb4">{{profile.name}} {{profile.surname}}</h1>
-    <span class="regular">{{profile.phoneNumber}}</span>
+    <h1 class="h4 mb4">{{profileData.name}} {{profileData.surname}}</h1>
+    <span class="regular">{{profileData.phoneNumber}}</span>
   </div>
 }

@@ -4,12 +4,13 @@
 <div class="content">
   <div class="tovar-card__wrapper">
     @for (advertisement of advertisements(); track advertisement.id) {
+      @if(advertisement.status) {
       <app-tovar-card
         [advertisement]="advertisement"
         [isInProfile]="false"
         [isMyProfile]="false"
         [isMine]="isMyAdvertisement(advertisement)"
-      ></app-tovar-card>
+      ></app-tovar-card>}
     }
   </div>
 </div>

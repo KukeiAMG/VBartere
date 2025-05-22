@@ -98,7 +98,6 @@ export class EditAdvertisementComponent implements OnInit {
       title: this.advertisementData.title,
       description: this.advertisementData.description,
       subCategoryId: this.advertisementData.subCategoryId,
-      ownerId: this.advertisement.ownerId,
       status: this.advertisement.status
     };
 

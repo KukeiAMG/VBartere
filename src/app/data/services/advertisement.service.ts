@@ -24,8 +24,7 @@ export class AdvertisementService {
   // Создать новое объявление
   createAdvertisement(
     advertisement: AdvertisementDTO,
-    files: File[],
-    userId: number
+    files: File[]
   ): Observable<any> {
     const formData = new FormData();
   
@@ -43,7 +42,6 @@ export class AdvertisementService {
   
 
     const headers = new HttpHeaders({
-      'user-ID': userId
     });
   
     return this.http.post(
@@ -97,14 +95,7 @@ export class AdvertisementService {
 
   // Удалить объявление
   deleteAdvertisement(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseApiUrl}${id}`);
-  }
-
-  // Получить объявления пользователя
-  getUserAdvertisements(userId: number): Observable<Advertisement[]> {
-    return this.http.get<Advertisement[]>(`${this.baseApiUrl}all`).pipe(
-      map(advertisements => advertisements.filter(ad => ad.ownerId === userId))
-    );
+    return this.http.delete<void>(`${this.baseApiUrl}${id}/delete`);
   }
 
   // Фильтрация объявлений
@@ -164,5 +155,16 @@ export class AdvertisementService {
       formData.append('files', file);
     });
     return this.http.put<AdvertisementDTO>(`${this.baseApiUrl}${id}/update-images`, formData);
+  }
+
+  // Получить объявления по массиву ID
+  getAdvertisementsByIds(ids: number[]): Observable<Advertisement[]> {
+    const queryParams = ids.map(id => `ids=${id}`).join('&');
+    return this.http.get<Advertisement[]>(`${this.baseApiUrl}by-ids?${queryParams}`).pipe(
+      catchError(error => {
+        console.error('Error getting advertisements by ids:', error);
+        return throwError(() => error);
+      })
+    );
   }
 } 

@@ -57,12 +57,6 @@ export class CreateAdvertisementComponent {
   }
 
 createAdvertisement(): void {
-  const userId = this.authService.currentUserId;
-  if (!userId) {
-    console.error('Пользователь не авторизован');
-    this.errorMessage = 'Ошибка аутентификации';
-    return;
-  }
 
   if (!this.advertisementData.title || !this.advertisementData.description) {
     this.errorMessage = 'Пожалуйста, заполните все обязательные поля';
@@ -75,14 +69,12 @@ createAdvertisement(): void {
     title: this.advertisementData.title,
     description: this.advertisementData.description,
     subCategoryId: this.advertisementData.subCategoryId,
-    ownerId: userId,
     status: true
   };
 
   this.advertisementService.createAdvertisement(
     advertisementDTO as AdvertisementDTO,
-    this.selectedFiles,
-    userId
+    this.selectedFiles
   ).subscribe({
     next: (response) => {
       console.log('Объявление успешно создано:', response);

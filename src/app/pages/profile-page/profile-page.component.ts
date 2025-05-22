@@ -7,8 +7,6 @@ import {combineLatest, map, switchMap, of} from 'rxjs';
 import {toObservable} from '@angular/core/rxjs-interop';
 import {AsyncPipe, NgForOf} from '@angular/common';
 import {SvgIconComponent} from '../../common-ui/svg-icon/svg-icon.component';
-import {SubscribedItemsComponent} from '../../common-ui/sidebar/subscribed-items/subscribed-items.component';
-import {ImgUrlsPipe} from '../../helpers/pipes/img-urls.pipe';
 import {AdvertisementService} from '../../data/services/advertisement.service';
 import {TovarCardComponent} from '../../common-ui/tovar-card/tovar-card.component';
 import {Advertisement} from '../../data/Interfaces/advertisement.interface';
@@ -18,15 +16,13 @@ import {BehaviorSubject} from 'rxjs';
 @Component({
   selector: 'app-profile-page',
   imports: [
-    AnimatedBackgroundComponent,
+    AnimatedBackgroundComponent,  
     RouterOutlet,
     ProfileHeaderComponent,
     AsyncPipe,
     RouterLink,
     SvgIconComponent,
     NgForOf,
-    SubscribedItemsComponent,
-    ImgUrlsPipe,
     TovarCardComponent
   ],
   templateUrl: './profile-page.component.html',
@@ -59,11 +55,16 @@ export class ProfilePageComponent {
             if (!userId) {
               return of([]);
             }
-            return this.advertisementService.getUserAdvertisements(userId);
+            return this.advertisementService.getAllAdvertisements().pipe(
+              map(advertisements => advertisements.filter(adv => adv.ownerId === userId))
+            );
           })
         );
       }
-      return this.advertisementService.getUserAdvertisements(Number(id));
+      // Для просмотра чужого профиля
+      return this.advertisementService.getAllAdvertisements().pipe(
+        map(advertisements => advertisements.filter(adv => adv.ownerId === +id))
+      );
     })
   );
 

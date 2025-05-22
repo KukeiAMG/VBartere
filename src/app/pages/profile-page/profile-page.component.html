@@ -33,13 +33,9 @@
 
         <div class="profile-info">
           @if( isMyProfile$ | async){
-            <h3 class="h6 mb16">Закреплённые товары</h3>
+            <h3 class="h6 mb16">В поиск</h3>
             <div class="subscribed-wrapper mb32">
-              <!--@for (profile of subscribed$ | async; track profile.id){
-                <a class="subscribed-photo-btn" [routerLink]="['/profile', profile.id]">
-                  <img [src]="profile.avatarUrl | imgUrls" alt="">
-                </a>
-              }-->
+
               <a class="to-search-btn" [routerLink]="['/']">
               </a>
             </div>
@@ -47,7 +43,7 @@
 
           <h3 class="h6 mb16">О себе</h3>
           <p class="medium-text">
-            @if(profile.description){{{profile.description}}} @else {Лёха не сделал подлец}
+            @if(profile.description){{{profile.description}}} @else {Обычный студент}
           </p>
         </div>
       </main>

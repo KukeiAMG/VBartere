@@ -2,8 +2,10 @@ import {inject, Injectable, signal} from '@angular/core';
 import {HttpClient, HttpHeaders, provideHttpClient} from '@angular/common/http';
 import {Profile} from '../Interfaces/profile.interface';
 import {Pageable} from '../Interfaces/pageable.interface';
-import {catchError, first, map, Observable, of, tap, throwError} from 'rxjs';
+import {catchError, first, map, Observable, of, tap, throwError, switchMap} from 'rxjs';
 import {CookieService} from 'ngx-cookie-service';
+
+
 
 @Injectable({
   providedIn: 'root'
@@ -13,10 +15,12 @@ export class ProfileService {
   cookieService = inject(CookieService)
 
   baseApiUrl = `http://localhost:8081/api/users/`
+  imageApiUrl = `http://localhost:8081/images/`
 
   private _isLoaded = false; // Флаг загрузки
 
   me = signal <Profile | null>(null)
+  
   getTestAccounts(){
   return this.http.get<Profile[]>(`${this.baseApiUrl}all`)
   }
@@ -94,12 +98,43 @@ export class ProfileService {
     return this.cookieService.get('token') || '';
   }
 
-  uploadAvatar(file: File){
+  uploadAvatar(file: File) {
     const fd = new FormData();
-    fd.append('image', file);
+    fd.append('file', file);
+    console.log('Отправляем файл:', file.name);
+    
     return this.http.post<Profile>(
-      `${this.baseApiUrl}account/upload_image`
-      , fd)
+      `${this.imageApiUrl}upload`,
+      fd
+    ).pipe(
+      tap(profile => {
+        console.log('Получен ответ от сервера:', profile);
+        console.log('Текущий профиль:', this.me());
+        
+        // Сохраняем только URL аватара, не трогая остальные поля
+        const currentProfile = this.me();
+        if (currentProfile) {
+          const updatedProfile = {
+            ...currentProfile,
+            avatarUrl: profile.avatarUrl
+          };
+          console.log('Обновленный профиль:', updatedProfile);
+          this.me.set(updatedProfile);
+        }
+        this._isLoaded = true;
+      })
+    );
+  }
+
+  deleteAvatar() {
+    return this.http.delete<Profile>(
+      `${this.imageApiUrl}delete-my-profile-photo`
+    ).pipe(
+      tap(profile => {
+        this.me.set(profile);
+        this._isLoaded = true;
+      })
+    );
   }
 
   private handleError(error: any): Error {
@@ -114,5 +149,7 @@ export class ProfileService {
     }
     return new Error('Ошибка при обновлении профиля');
   }
+
+
 
 }
