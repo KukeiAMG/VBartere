@@ -28,8 +28,7 @@ public class SendUserServiceEvent {
                 System.err.println("ошибка при отправке сообщения: " + ex.getMessage());
             } else {
                 RecordMetadata metadata = result.getRecordMetadata();
-                System.out.printf("сообщение отправлено в ",
-                        metadata.topic(), metadata.partition(), metadata.offset());
+                System.out.printf("сообщение отправлено в " + metadata.topic());
             }
         });
     }

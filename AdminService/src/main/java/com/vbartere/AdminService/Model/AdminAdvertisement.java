@@ -2,6 +2,7 @@ package com.vbartere.AdminService.Model;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -18,7 +19,10 @@ public class AdminAdvertisement {
 
     private String subcategoryTitle;
 
-    private List<String> imageUrls;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "admin_advertisement_image_urls", joinColumns = @JoinColumn(name = "advertisement_id"))
+    @Column(name = "image_url")
+    private List<String> imageUrls = new ArrayList<>();
 
     private Long ownerId;
 

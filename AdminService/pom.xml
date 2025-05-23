@@ -84,7 +84,7 @@
 		<dependency>
 			<groupId>com.github.KukeiAMG</groupId>
 			<artifactId>SharedKafka</artifactId>
-			<version>2288c8af79</version>
+			<version>09d5f22f4c</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

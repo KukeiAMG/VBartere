@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/api/admin/users/")
+@RequestMapping("/api/admin/users")
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
@@ -24,10 +24,11 @@ public class AdminUserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUser(@PathVariable("id") Long id) {
+    public ResponseEntity<?> getUser(@PathVariable Long id) {
         try {
             AdminUserDTO adminUserDTO = adminUserService.getById(id);
-            return ResponseEntity.ok().body(adminUserDTO);
+
+            return ResponseEntity.ok(adminUserDTO);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));

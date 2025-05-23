@@ -27,6 +27,11 @@ public class AdminUserEventConsumer {
 
         AdminUserDTO event = objectMapper.readValue(message, AdminUserDTO.class);
 
+        if (event.getId() == null) {
+            System.err.println("Получен объект AdminUser с пустым ID: " + event);
+            return; // или выбросить исключение, если это критично
+        }
+
         switch (event.getEvent()) {
             case USER_CREATED, USER_UPDATED -> {
                 Optional<AdminUser> optionalUser = adminUserRepository.findById(event.getId());
@@ -47,6 +52,10 @@ public class AdminUserEventConsumer {
                 adminUser.setImageUrl(event.getImageUrl());
                 adminUser.setRoles(event.getRoles());
                 adminUser.setBanned(event.isBanned());
+
+                for (Long advId : event.getAddedAdvertisements()) {
+                    adminUser.getAddedAdvertisements().add(advId);
+                }
 
                 adminUserRepository.save(adminUser);
 

@@ -63,6 +63,7 @@ public class AdminUserService {
         adminUserRepository.save(adminUser);
 
         UserEvent userEvent = new UserEvent();
+        userEvent.setId(id);
         userEvent.setName(adminUser.getName());
         userEvent.setEmail(adminUser.getEmail());
         userEvent.setEvent(UserEventType.USER_BANNED);

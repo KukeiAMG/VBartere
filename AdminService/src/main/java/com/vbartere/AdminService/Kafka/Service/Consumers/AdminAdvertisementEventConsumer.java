@@ -8,6 +8,7 @@ import com.vbartere.AdminService.Repository.AdminAdvertisementRepository;
 import com.vbartere.AdminService.Repository.AdminUserRepository;
 import com.vbartere.Shared.Kafka.DTO.AdminService.AdminAdvertisementDTO;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -30,8 +31,24 @@ public class AdminAdvertisementEventConsumer {
     public void handleAdvertisementEvent(String message) throws JsonProcessingException {
         AdminAdvertisementDTO event = objectMapper.readValue(message, AdminAdvertisementDTO.class);
 
+        System.out.println(event.toString());
+
+        if (event.getId() == null) {
+            System.err.println("Получен объект advertisement с пустым ID: " + event);
+            return; // или выбросить исключение, если это критично
+        }
+
         switch (event.getEventType()) {
             case ADVERTISEMENT_CREATED, ADVERTISEMENT_UPDATED -> {
+                if (event.getBuyersId() != null) {
+                    AdminUser buyer = adminUserRepository.findById(event.getBuyersId())
+                            .orElseThrow(() -> new EntityNotFoundException("Покупатель не найден"));
+                    event.setBuyersId(event.getBuyersId());
+                    event.setBuyerUsername(buyer.getName());
+                } else {
+                    event.setBuyersId(null);
+                    event.setBuyerUsername(null);
+                }
                 Optional<AdminAdvertisement> optionalAdvertisement = adminAdvertisementRepository.findById(event.getId());
 
                 AdminAdvertisement adminAdvertisement = optionalAdvertisement.orElseGet(() -> {
@@ -50,6 +67,7 @@ public class AdminAdvertisementEventConsumer {
                 adminAdvertisement.setOwnerId(event.getOwnerId());
                 adminAdvertisement.setOwnerUsername(owner.getName());
                 adminAdvertisement.setStatus(event.getStatus());
+                adminAdvertisement.setBuyersId(event.getBuyersId());
 
                 if (event.getBuyersId() != null) {
                     adminAdvertisement.setBuyersId(event.getBuyersId());

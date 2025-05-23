@@ -64,6 +64,7 @@ public class AdminAdvertisementService {
                id,
                adminAdvertisement.getTitle(),
                description,
+               adminAdvertisement.getOwnerId(),
                AdvertisementEventType.ADVERTISEMENT_BANNED
         );
 
