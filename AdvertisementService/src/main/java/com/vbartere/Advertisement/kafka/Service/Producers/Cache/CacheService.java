@@ -13,11 +13,9 @@ import java.util.concurrent.TimeoutException;
 public class CacheService {
 
     private final CacheAwaiterService cacheAwaiterService;
-    private final AdvertisementService advertisementService;
 
-    public CacheService(CacheAwaiterService cacheAwaiterService, AdvertisementService advertisementService) {
+    public CacheService(CacheAwaiterService cacheAwaiterService) {
         this.cacheAwaiterService = cacheAwaiterService;
-        this.advertisementService = advertisementService;
     }
 
     @KafkaListener(topics = "cache.ready", groupId = "redis.cache.service.group")

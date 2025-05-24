@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -139,6 +140,12 @@ public class AdvertisementService {
         advertisement.setStatus(advertisementDTO.isStatus());
         advertisement.setOwnerId(userId);
 
+        if (advertisementDTO.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Стоимость должна быть > 0");
+        }
+
+        advertisement.setPrice(advertisementDTO.getPrice());
+
         List<Image> images = new ArrayList<>();
         if (files != null) {
             for (int i = 0; i < files.size(); i++) {
@@ -202,6 +209,13 @@ public class AdvertisementService {
             advertisement.setOwnerId(advertisementDTO.getOwnerId());
         }
 
+        if (advertisementDTO.getPrice() != null) {
+            if (advertisementDTO.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Стоимость должна быть > 0");
+            }
+            advertisement.setPrice(advertisementDTO.getPrice());
+        }
+
         if (files != null && !files.isEmpty()) {
             List<Image> newImages = new ArrayList<>();
             for (MultipartFile file : files) {
@@ -251,6 +265,13 @@ public class AdvertisementService {
 
         if (advertisementDTO.getOwnerId() != null) {
             advertisement.setOwnerId(advertisementDTO.getOwnerId());
+        }
+
+        if (advertisementDTO.getPrice() != null) {
+            if (advertisementDTO.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Стоимость должна быть > 0");
+            }
+            advertisement.setPrice(advertisementDTO.getPrice());
         }
 
         Advertisement savedAd = advertisementRepository.save(advertisement);
@@ -321,7 +342,11 @@ public class AdvertisementService {
         System.out.println("Объявление и его кэш успешно удалены: " + advertisementID);
 
         missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                new CartResult(userId, advertisementID, true, UserEventType.USER_REMOVE_HIS_ADVERTISEMENT)
+                new CartResult(userId,
+                        advertisementID,
+                        advertisement.getPrice(),
+                        true,
+                        UserEventType.USER_REMOVE_HIS_ADVERTISEMENT)
         ));
         sendAdminService.sendAdminRequest(objectMapper.writeValueAsString(adminAdvertisementDTO));
     }

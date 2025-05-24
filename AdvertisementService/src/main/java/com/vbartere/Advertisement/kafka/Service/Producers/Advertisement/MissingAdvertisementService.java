@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 public class MissingAdvertisementService {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    private final String TOPIC = "missing.advertisements";
+    final String TOPIC = "missing.advertisements";
 
     public MissingAdvertisementService(KafkaTemplate<String, String> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;

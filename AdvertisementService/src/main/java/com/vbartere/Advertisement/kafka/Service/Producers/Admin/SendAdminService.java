@@ -16,7 +16,7 @@ public class SendAdminService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    private final String TOPIC = "administration.advertisement.event";
+    final String TOPIC = "administration.advertisement.event";
 
     public SendAdminService(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;

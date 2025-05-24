@@ -55,7 +55,13 @@ public class KafkaCartEventConsumer {
                     System.out.println("Пользователь " + event.getUserId() + " заблокирован");
 
                     missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                            new CartResult(event.getUserId(), event.getAdvertisementId(), false, UserEventType.USER_BANNED)
+                            new CartResult(
+                                    event.getUserId(),
+                                    event.getAdvertisementId(),
+                                    event.getPrice(),
+                                    false,
+                                    UserEventType.USER_BANNED
+                            )
                     ));
 
                     return;
@@ -71,7 +77,13 @@ public class KafkaCartEventConsumer {
                             System.out.println("Нельзя добавить свое же объявление");
 
                             missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                                    new CartResult(event.getUserId(), event.getAdvertisementId(), false, UserEventType.USER_ADD_ADVERTISEMENT_TO_CART)
+                                    new CartResult(
+                                            event.getUserId(),
+                                            event.getAdvertisementId(),
+                                            event.getPrice(),
+                                            false,
+                                            UserEventType.USER_ADD_ADVERTISEMENT_TO_CART
+                                    )
                             ));
 
                             return;
@@ -105,31 +117,41 @@ public class KafkaCartEventConsumer {
                                 AdvertisementEventType.ADVERTISEMENT_UPDATED);
 
                         System.out.println("\nОбработка события: " + event + "\nТовар: " + persistentAd.getId());
-
-                        missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                                new CartResult(event.getUserId(),
+                        System.out.println(persistentAd.getPrice());
+                        String messagee = objectMapper.writeValueAsString(
+                                new CartResult(
+                                        event.getUserId(),
                                         event.getAdvertisementId(),
+                                        persistentAd.getPrice(),
                                         true,
-                                        UserEventType.USER_ADD_ADVERTISEMENT_TO_CART)
-                        ));
+                                        UserEventType.USER_ADD_ADVERTISEMENT_TO_CART
+                                ));
+                        missingAdvertisementService.sendMissingAdvertisementRequest(messagee);
+                        System.out.println("Отправляемый JSON: " + message);
                         sendAdminService.sendAdminRequest(objectMapper.writeValueAsString(adminAdvertisementDTO));
                     } else {
                         System.out.println("Данное объявление снято с публикации");
                         missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                                new CartResult(event.getUserId(),
+                                new CartResult(
+                                        event.getUserId(),
                                         event.getAdvertisementId(),
+                                        event.getPrice(),
                                         false,
-                                        UserEventType.USER_ADD_ADVERTISEMENT_TO_CART)
+                                        UserEventType.USER_ADD_ADVERTISEMENT_TO_CART
+                                )
                         ));
                     }
 
                 } catch (EntityNotFoundException e) {
                     System.out.println("Объявление с ID " + event.getAdvertisementId() + " не найдено.");
                     missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                            new CartResult(event.getUserId(),
+                            new CartResult(
+                                    event.getUserId(),
                                     event.getAdvertisementId(),
+                                    event.getPrice(),
                                     false,
-                                    UserEventType.USER_DID_NOT_FIND_THE_ADVERTISEMENT)
+                                    UserEventType.USER_DID_NOT_FIND_THE_ADVERTISEMENT
+                            )
                     ));
                 } catch (Exception e) {
                     System.out.println("Ошибка обработки события: " + e.getMessage());
@@ -153,18 +175,24 @@ public class KafkaCartEventConsumer {
                     sendAdminService.sendAdminRequest(objectMapper.writeValueAsString(adminAdvertisementDTO));
 
                     missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                            new CartResult(event.getUserId(),
+                            new CartResult(
+                                    event.getUserId(),
                                     event.getAdvertisementId(),
+                                    event.getPrice(),
                                     true,
-                                    UserEventType.USER_REMOVE_ADVERTISEMENT_FROM_CART)
+                                    UserEventType.USER_REMOVE_ADVERTISEMENT_FROM_CART
+                            )
                     ));
                 } catch (EntityNotFoundException e) {
                     System.out.println("Объявление не найдено: " + event.getAdvertisementId());
                     missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                            new CartResult(event.getUserId(),
+                            new CartResult(
+                                    event.getUserId(),
                                     event.getAdvertisementId(),
+                                    event.getPrice(),
                                     false,
-                                    UserEventType.USER_DID_NOT_FIND_THE_ADVERTISEMENT)
+                                    UserEventType.USER_DID_NOT_FIND_THE_ADVERTISEMENT
+                            )
                     ));
                 } catch (Exception e) {
                     System.err.println("Ошибка при удалении из корзины: " + e.getMessage());
@@ -200,10 +228,13 @@ public class KafkaCartEventConsumer {
                     }
 
                     missingAdvertisementService.sendMissingAdvertisementRequest(objectMapper.writeValueAsString(
-                            new CartResult(userId,
+                            new CartResult(
+                                    userId,
+                                    null,
                                     null,
                                     true,
-                                    UserEventType.USER_CLEARED_HIS_CART)
+                                    UserEventType.USER_CLEARED_HIS_CART
+                            )
                     ));
 
                     System.out.println("Корзина очищена для пользователя: " + userId);

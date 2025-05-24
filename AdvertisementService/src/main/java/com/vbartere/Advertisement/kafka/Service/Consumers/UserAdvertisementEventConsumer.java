@@ -51,6 +51,7 @@ public class UserAdvertisementEventConsumer {
                 CartResult cartResult = new CartResult(
                         userEvent.getId(),
                         advertisement.getId(),
+                        advertisement.getPrice(),
                         true,
                         UserEventType.USER_REMOVE_HIS_ADVERTISEMENT
                 );

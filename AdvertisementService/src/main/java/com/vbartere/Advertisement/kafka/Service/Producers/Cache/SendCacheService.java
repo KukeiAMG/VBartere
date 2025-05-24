@@ -16,7 +16,7 @@ public class SendCacheService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    private final String TOPIC = "cache.advertisement";
+    final String TOPIC = "cache.advertisement";
 
     public SendCacheService(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;

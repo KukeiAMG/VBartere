@@ -16,7 +16,7 @@ public class SendNotificationRequest {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    private final String TOPIC = "notification.user.event";
+    final String TOPIC = "notification.user.event";
 
     public SendNotificationRequest(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;

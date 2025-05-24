@@ -7,6 +7,7 @@ import com.vbartere.Shared.Kafka.DTO.Advertisement.AdvertisementDTO;
 import com.vbartere.Shared.Kafka.Enum.AdvertisementEventType;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -22,6 +23,12 @@ public class AdvertisementMapper {
         dto.setOwnerId(advertisement.getOwnerId());
         dto.setBuyersId(advertisement.getBuyersId());
         dto.setStatus(advertisement.getStatus());
+
+        if (advertisement.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Стоимость должна быть > 0");
+        } else {
+            dto.setPrice(advertisement.getPrice());
+        }
 
         if (advertisement.getStatus() != null) {
             dto.setStatus(advertisement.getStatus());
@@ -52,6 +59,7 @@ public class AdvertisementMapper {
         dto.setTitle(ad.getTitle());
         dto.setDescription(ad.getDescription());
         dto.setStatus(ad.getStatus());
+        dto.setPrice(ad.getPrice());
         dto.setOwnerId(ad.getOwnerId());
         dto.setBuyersId(ad.getBuyersId());
         dto.setSubcategoryId(ad.getSubcategory().getId());

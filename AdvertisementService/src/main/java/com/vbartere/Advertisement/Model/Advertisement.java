@@ -1,6 +1,7 @@
 package com.vbartere.Advertisement.Model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
@@ -46,9 +48,13 @@ public class Advertisement {
     @Column(name = "status")
     private Boolean status;
 
+    @Column(name = "price")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private BigDecimal price;
+
     public Advertisement() {}
 
-    public Advertisement(String title, String description, SubCategory subcategory, List<Image> imageList, Long ownerId, Long buyersId, boolean status) {
+    public Advertisement(String title, String description, SubCategory subcategory, List<Image> imageList, Long ownerId, Long buyersId, Boolean status, BigDecimal price) {
         this.title = title;
         this.description = description;
         this.subcategory = subcategory;
@@ -56,6 +62,7 @@ public class Advertisement {
         this.ownerId = ownerId;
         this.buyersId = buyersId;
         this.status = status;
+        this.price = price;
     }
 
     public Long getId() {
@@ -120,6 +127,14 @@ public class Advertisement {
 
     public void setStatus(Boolean status) {
         this.status = status;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public void setPrice(BigDecimal price) {
+        this.price = price;
     }
 
     @Override
