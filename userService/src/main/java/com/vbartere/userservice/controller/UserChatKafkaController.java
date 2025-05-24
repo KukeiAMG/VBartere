@@ -3,7 +3,6 @@ package com.vbartere.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vbartere.userservice.DTO.UserChatDTO;
-import com.vbartere.userservice.service.JwtService;
 import com.vbartere.userservice.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -18,16 +17,15 @@ import java.util.Map;
 @RestController
 public class UserChatKafkaController {
     private final UserService userService;
-    private final KafkaTemplate kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
-    private final JwtService jwtService;
-    private static final String TOPIC_USER_CHAT = "user-chat";
 
-    public UserChatKafkaController(UserService userService, KafkaTemplate kafkaTemplate, ObjectMapper objectMapper, JwtService jwtService) {
+    final String TOPIC_USER_CHAT = "user-chat";
+
+    public UserChatKafkaController(UserService userService, KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.userService = userService;
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
-        this.jwtService = jwtService;
     }
 
     @PostMapping("/api/chatroom/{targetUserId}/add")

@@ -14,7 +14,7 @@ public class SendAdvertisementRequest {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    private final String TOPIC = "user.advertisement.events";
+    final String TOPIC = "user.advertisement.events";
 
     public SendAdvertisementRequest(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
@@ -23,7 +23,7 @@ public class SendAdvertisementRequest {
 
 
     @Async("taskExecutor")
-    public void sendAdvertisementRequest(String userEvent) {
+    public void sendRequest(String userEvent) {
         CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, userEvent);
 
         future.whenComplete((result, ex) -> {

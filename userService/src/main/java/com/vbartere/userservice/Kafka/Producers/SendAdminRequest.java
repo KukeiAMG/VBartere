@@ -16,7 +16,7 @@ public class SendAdminRequest {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    private final String TOPIC = "administration.user.event";
+    final String TOPIC = "administration.user.event";
 
     public SendAdminRequest(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
@@ -24,7 +24,7 @@ public class SendAdminRequest {
     }
 
     @Async("taskExecutor")
-    public void sendAdminRequest(String adminUserDTO) {
+    public void sendRequest(String adminUserDTO) {
         CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, adminUserDTO);
 
         future.whenComplete((result, ex) -> {
@@ -42,7 +42,7 @@ public class SendAdminRequest {
     public void updateAdminAsync(AdminUserDTO adminUserDTO) {
         try {
             String json = objectMapper.writeValueAsString(adminUserDTO);
-            sendAdminRequest(json);
+            sendRequest(json);
         } catch (JsonProcessingException e) {
             System.err.println("ошибка отправки сообщения: " + e.getMessage());
         }

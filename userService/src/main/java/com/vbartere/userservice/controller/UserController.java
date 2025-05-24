@@ -6,15 +6,12 @@ import com.vbartere.userservice.DTO.RegisterUserRequest;
 import com.vbartere.userservice.DTO.UserUpdateDTO;
 import com.vbartere.userservice.exceptions.InvalidTokenException;
 import com.vbartere.userservice.model.User;
-import com.vbartere.userservice.service.JwtService;
 import com.vbartere.userservice.service.RefreshTokenService;
 import com.vbartere.userservice.service.UserService;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -27,16 +24,12 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:4200")
 public class UserController {
     private final UserService userService;
-    private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
-    public UserController(UserService userService, JwtService jwtService, RefreshTokenService refreshTokenService) {
+    public UserController(UserService userService, RefreshTokenService refreshTokenService) {
         this.userService = userService;
-        this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
     }
-
-    private String USER_TOKEN;
 
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<?> handleInvalidToken(InvalidTokenException e) {
@@ -82,7 +75,7 @@ public class UserController {
     }
 
     @DeleteMapping("/delete-my-account")
-    public ResponseEntity<?> deleteCurrentUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) throws JsonProcessingException {
+    public ResponseEntity<?> deleteCurrentUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         try {
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 throw new InvalidTokenException("Невалидный формат токена");

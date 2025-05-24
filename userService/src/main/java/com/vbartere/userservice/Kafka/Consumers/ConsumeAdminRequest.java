@@ -42,9 +42,10 @@ public class ConsumeAdminRequest {
                             user.getId(),
                             user.isBanned,
                             null,
+                            null,
                             CartEventType.CLEAR_CART
                     );
-                    sendCartRequest.sendCartRequest(objectMapper.writeValueAsString(cartEvent));
+                    sendCartRequest.sendRequest(objectMapper.writeValueAsString(cartEvent));
 
                 } else {
                     System.out.println("Пользователь с ID " + user.getId() + " уже был забанен.");

@@ -17,7 +17,7 @@ public class SendCartRequest {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    private final String TOPIC = "cart.events";
+    final String TOPIC = "cart.events";
 
     public SendCartRequest(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
@@ -25,7 +25,7 @@ public class SendCartRequest {
     }
 
     @Async("taskExecutor")
-    public void sendCartRequest(String cartEvent) {
+    public void sendRequest(String cartEvent) {
         CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, cartEvent);
 
         future.whenComplete((result, ex) -> {
@@ -43,7 +43,7 @@ public class SendCartRequest {
     public void updateAdminAsync(CartEvent cartEvent) {
         try {
             String json = objectMapper.writeValueAsString(cartEvent);
-            sendCartRequest(json);
+            sendRequest(json);
         } catch (JsonProcessingException e) {
             System.err.println("ошибка отправки сообщения: " + e.getMessage());
         }

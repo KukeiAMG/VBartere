@@ -9,6 +9,7 @@ import com.vbartere.userservice.Kafka.Producers.SendNotificationRequest;
 import com.vbartere.userservice.Mapper.CartMapper;
 import com.vbartere.Shared.Kafka.DTO.Cart.CartDTO;
 import com.vbartere.userservice.model.Cart;
+import com.vbartere.userservice.model.Embeddable.CartItem;
 import com.vbartere.userservice.model.User;
 import com.vbartere.userservice.repository.CartRepository;
 import com.vbartere.userservice.repository.UserRepository;
@@ -16,6 +17,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,7 +50,7 @@ public class CartService {
     }
 
     @Transactional
-    public void addProductToCart(Long userId, Long advertisementId) {
+    public void addProductToCart(Long userId, Long advertisementId, BigDecimal priceAtMoment) {
 
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new EntityNotFoundException("Пользователь не найден в БД")
@@ -65,12 +67,20 @@ public class CartService {
             cart.setAdvertisementList(new ArrayList<>());
         }
 
-        if (!cart.getAdvertisementList().contains(advertisementId)) {
-            System.out.println("Before adding: " + cart.getAdvertisementList());
+        boolean alreadyExists = cart.getAdvertisementList().stream()
+                .anyMatch(item -> item.getAdvertisementId().equals(advertisementId));
 
-            cart.getAdvertisementList().add(advertisementId);
+        if (!alreadyExists) {
+            CartItem newItem = new CartItem();
+            newItem.setAdvertisementId(advertisementId);
+            newItem.setPrice(priceAtMoment);
+            newItem.setSelected(true);
 
-            System.out.println("After adding: " + cart.getAdvertisementList());
+            cart.getAdvertisementList().add(newItem);
+
+            System.out.println("Товар добавлен в корзину: " + advertisementId);
+        } else {
+            System.out.println("Товар уже есть в корзине: " + advertisementId);
         }
 
         cartRepository.save(cart);
@@ -84,16 +94,17 @@ public class CartService {
         );
 
         Cart cart = user.getCart();
+        if (cart == null || cart.getAdvertisementList() == null) {
+            System.out.println("У пользователя нет корзины или она пуста.");
+            return;
+        }
 
-        List<Long> advertisementList = cart.getAdvertisementList();
+        List<CartItem> items = cart.getAdvertisementList();
 
-        if (advertisementList != null && advertisementList.contains(advertisementId)) {
-            System.out.println("Before removing: " + advertisementList);
+        boolean removed = items.removeIf(item -> advertisementId.equals(item.getAdvertisementId()));
 
-            advertisementList.remove(advertisementId);
-
-            System.out.println("After removing: " + advertisementList);
-
+        if (removed) {
+            System.out.println("Объявление " + advertisementId + " удалено из корзины.");
             cartRepository.save(cart);
         } else {
             System.out.println("Объявление не найдено в корзине пользователя.");
@@ -112,7 +123,7 @@ public class CartService {
             return;
         }
 
-        List<Long> advertisementList = cart.getAdvertisementList();
+        List<CartItem> advertisementList = cart.getAdvertisementList();
         if (advertisementList != null && !advertisementList.isEmpty()) {
             System.out.println("Корзина до очистки: " + advertisementList);
             advertisementList.clear(); // Очищаем весь список
@@ -129,13 +140,14 @@ public class CartService {
 
         int affected = 0;
         for (Cart cart : carts) {
-            List<Long> ads = cart.getAdvertisementList();
-            if (ads.remove(advertisementId)) {
+            List<CartItem> items = cart.getAdvertisementList();
+            boolean removed = items.removeIf(item -> item.getAdvertisementId().equals(advertisementId));
+            if (removed) {
                 affected++;
             }
         }
 
-        cartRepository.saveAll(carts); // Сохраняем изменённые корзины
+        cartRepository.saveAll(carts);
         System.out.println("Объявление " + advertisementId + " удалено из " + affected + " корзин.");
     }
 

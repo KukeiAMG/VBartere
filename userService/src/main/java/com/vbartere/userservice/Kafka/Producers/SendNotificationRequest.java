@@ -17,7 +17,7 @@ public class SendNotificationRequest {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    private final String TOPIC = "notification.user.event";
+    final String TOPIC = "notification.user.event";
 
     public SendNotificationRequest(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
@@ -25,7 +25,7 @@ public class SendNotificationRequest {
     }
 
     @Async("taskExecutor")
-    public void sendNotificationRequest(String UserEvent) {
+    public void sendRequest(String UserEvent) {
         CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, UserEvent);
 
         future.whenComplete((result, ex) -> {
@@ -43,7 +43,7 @@ public class SendNotificationRequest {
     public void updateNotificationAsync(UserEvent UserEvent) {
         try {
             String json = objectMapper.writeValueAsString(UserEvent);
-            sendNotificationRequest(json);
+            sendRequest(json);
         } catch (JsonProcessingException e) {
             System.err.println("ошибка отправки сообщения: " + e.getMessage());
         }

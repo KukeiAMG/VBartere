@@ -15,7 +15,7 @@ public class DataLoader implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         if (roleRepository.findByName("ROLE_ADMIN") == null) {
             Role adminRole = new Role();
             adminRole.setName("ROLE_ADMIN");

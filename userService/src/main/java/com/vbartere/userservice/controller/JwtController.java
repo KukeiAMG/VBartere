@@ -9,11 +9,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +22,7 @@ public class JwtController {
 
     private final UserService userService;
     private final JwtService jwtService;
+    final String expectedSecret = "my-super-secret";
 
     public JwtController(UserService userService, JwtService jwtService) {
         this.userService = userService;
@@ -70,8 +69,6 @@ public class JwtController {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
             @RequestHeader(value = "X-Gateway-Secret", required = false) String gatewaySecret
     ) {
-        final String expectedSecret = "my-super-secret";
-
         if (!expectedSecret.equals(gatewaySecret)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -90,10 +87,8 @@ public class JwtController {
     @GetMapping("/currentUserInfo")
     public ResponseEntity<UserInfoDTO> getCurrentUserInfo(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
-            @RequestHeader(value = "X-Gateway-Secret", required = true) String gatewaySecret
+            @RequestHeader(value = "X-Gateway-Secret") String gatewaySecret
     ) {
-        final String expectedSecret = "my-super-secret";
-
         if (!expectedSecret.equals(gatewaySecret)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }

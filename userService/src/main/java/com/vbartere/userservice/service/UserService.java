@@ -117,7 +117,7 @@ public class UserService {
         );
         userEvent.setDescription("Выполнен вход в ваш аккаунт");
 
-        sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+        sendNotificationRequest.sendRequest(objectMapper.writeValueAsString(userEvent));
         Map<String, String> response = new HashMap<>();
         response.put("accessToken", accessToken);
         response.put("refreshToken", refreshToken);
@@ -168,9 +168,9 @@ public class UserService {
                 user.getInvitedByCode()
         );
 
-        sendReferralRequest.sendReferralRequest(objectMapper.writeValueAsString(userReferralDTO));
-        sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
-        sendAdminRequest.sendAdminRequest(objectMapper.writeValueAsString(adminUserDTO));
+        sendReferralRequest.sendRequest(objectMapper.writeValueAsString(userReferralDTO));
+        sendNotificationRequest.sendRequest(objectMapper.writeValueAsString(userEvent));
+        sendAdminRequest.sendRequest(objectMapper.writeValueAsString(adminUserDTO));
 
         return user;
     }
@@ -313,7 +313,7 @@ public class UserService {
                 UserEventType.USER_DELETED
         );
         userEvent.setDescription("Пользователь удалил свой аккаунт");
-        sendAdvertisementRequest.sendAdvertisementRequest(
+        sendAdvertisementRequest.sendRequest(
                 objectMapper.writeValueAsString(userEvent)
         );
 

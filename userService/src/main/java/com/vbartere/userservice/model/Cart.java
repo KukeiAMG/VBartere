@@ -1,5 +1,6 @@
 package com.vbartere.userservice.model;
 
+import com.vbartere.userservice.model.Embeddable.CartItem;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -12,9 +13,9 @@ public class Cart {
     @Column(name = "id")
     private Long id;
     @ElementCollection
-    @CollectionTable(name = "cart_advertisement_list", joinColumns = @JoinColumn(name = "cart_id"))
+    @CollectionTable(name = "cart_items", joinColumns = @JoinColumn(name = "cart_id"))
     @Column(name = "advertisement_id")
-    List<Long> advertisementList;
+    List<CartItem> advertisementList;
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
@@ -23,7 +24,7 @@ public class Cart {
 
     }
 
-    public Cart(List<Long> advertisementList, User user) {
+    public Cart(List<CartItem> advertisementList, User user) {
         this.advertisementList = advertisementList;
         this.user = user;
     }
@@ -36,11 +37,11 @@ public class Cart {
         this.id = id;
     }
 
-    public List<Long> getAdvertisementList() {
+    public List<CartItem> getAdvertisementList() {
         return advertisementList;
     }
 
-    public void setAdvertisementList(List<Long> advertisementList) {
+    public void setAdvertisementList(List<CartItem> advertisementList) {
         this.advertisementList = advertisementList;
     }
 

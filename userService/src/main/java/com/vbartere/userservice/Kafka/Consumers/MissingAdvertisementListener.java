@@ -38,8 +38,9 @@ public class MissingAdvertisementListener {
 
     @KafkaListener(topics = "missing.advertisements")
     public void handleCartEvent(String message) throws JsonProcessingException {
+        System.out.println(message);
         CartResult result = objectMapper.readValue(message, CartResult.class);
-        System.out.println(result);
+        System.out.println("____________________________________"+result+"_________________________________");
 
         User user;
         try {
@@ -59,7 +60,7 @@ public class MissingAdvertisementListener {
                 );
                 userEvent.setDescription("Пользователь удалил аккаунт и свои объявления");
 
-                sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+                sendNotificationRequest.sendRequest(objectMapper.writeValueAsString(userEvent));
                 return;
             } else {
                 return;
@@ -72,7 +73,8 @@ public class MissingAdvertisementListener {
                 switch (result.getEventType()) {
                     case USER_ADD_ADVERTISEMENT_TO_CART -> {
                         System.out.println("Объявление с ID " + result.getAdvertisementId() + " успешно обработано.");
-                        cartService.addProductToCart(result.getUserId(), result.getAdvertisementId());
+                        System.out.println("Цена объявления: " + result.getPrice());
+                        cartService.addProductToCart(result.getUserId(), result.getAdvertisementId(), result.getPrice());
 
                         UserEvent userEvent = new UserEvent(
                                 user.getId(),
@@ -81,7 +83,7 @@ public class MissingAdvertisementListener {
                                 UserEventType.USER_ADD_ADVERTISEMENT_TO_CART
                         );
                         userEvent.setDescription("Объявление успешно добавлено");
-                        sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+                        sendNotificationRequest.sendRequest(objectMapper.writeValueAsString(userEvent));
                         sendAdminRequest.updateAdminAsync(adminUserDTO);
                     }
                     case USER_REMOVE_ADVERTISEMENT_FROM_CART -> {
@@ -94,7 +96,7 @@ public class MissingAdvertisementListener {
                                 UserEventType.USER_REMOVE_ADVERTISEMENT_FROM_CART
                         );
                         userEvent.setDescription("Объявление успешно удалено");
-                        sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+                        sendNotificationRequest.sendRequest(objectMapper.writeValueAsString(userEvent));
                         sendAdminRequest.updateAdminAsync(adminUserDTO);
                     }
                     case USER_CLEARED_HIS_CART -> {
@@ -107,7 +109,7 @@ public class MissingAdvertisementListener {
                                 UserEventType.USER_CLEARED_HIS_CART
                         );
                         userEvent.setDescription("Корзина успешно очищена");
-                        sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+                        sendNotificationRequest.sendRequest(objectMapper.writeValueAsString(userEvent));
                         adminUserDTO.getAddedAdvertisements().clear();
                         System.out.println(adminUserDTO);
                         sendAdminRequest.updateAdminAsync(adminUserDTO);
@@ -122,7 +124,7 @@ public class MissingAdvertisementListener {
                                 UserEventType.USER_DID_NOT_FIND_THE_ADVERTISEMENT
                         );
                         userEvent.setDescription("Не удалось найти объявление");
-                        sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+                        sendNotificationRequest.sendRequest(objectMapper.writeValueAsString(userEvent));
                     }
                     case USER_REMOVE_HIS_ADVERTISEMENT -> {
                         System.out.println("Вы успешно удалили свое объявление " + result.getAdvertisementId());
@@ -135,7 +137,7 @@ public class MissingAdvertisementListener {
                         );
                         userEvent.setDescription("Не удалось найти объявление");
                         sendAdminRequest.updateAdminAsync(adminUserDTO);
-                        sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+                        sendNotificationRequest.sendRequest(objectMapper.writeValueAsString(userEvent));
                     }
                 }
             }
@@ -148,7 +150,7 @@ public class MissingAdvertisementListener {
                     UserEventType.USER_BANNED
             );
             userEvent.setDescription("Вы заблокированы и не можете добавлять объявления");
-            sendNotificationRequest.sendNotificationRequest(objectMapper.writeValueAsString(userEvent));
+            sendNotificationRequest.sendRequest(objectMapper.writeValueAsString(userEvent));
         }
     }
 }

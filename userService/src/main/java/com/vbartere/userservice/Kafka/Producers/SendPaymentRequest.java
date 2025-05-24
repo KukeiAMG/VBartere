@@ -1,8 +1,6 @@
 package com.vbartere.userservice.Kafka.Producers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vbartere.Shared.Kafka.DTO.UserReferralDTO;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -12,20 +10,19 @@ import org.springframework.stereotype.Service;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-public class SendReferralRequest {
+public class SendPaymentRequest {
+
     private final KafkaTemplate<String, String> kafkaTemplate;
-    private final ObjectMapper objectMapper;
 
-    final String TOPIC = "user.registration.referral";
+    final String TOPIC = "user.payment.event";
 
-    public SendReferralRequest(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
+    public SendPaymentRequest(KafkaTemplate<String, String> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = objectMapper;
     }
 
     @Async("taskExecutor")
-    public void sendRequest(String userReferralDTO) {
-        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, userReferralDTO);
+    public void sendRequest(String UserEvent) {
+        CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(TOPIC, UserEvent);
 
         future.whenComplete((result, ex) -> {
             if (ex != null) {
@@ -37,14 +34,5 @@ public class SendReferralRequest {
                         ", offset: " + metadata.offset());
             }
         });
-    }
-
-    public void updateReferralAsync(UserReferralDTO userReferralDTO) {
-        try {
-            String json = objectMapper.writeValueAsString(userReferralDTO);
-            sendRequest(json);
-        } catch (JsonProcessingException e) {
-            System.err.println("ошибка отправки сообщения: " + e.getMessage());
-        }
     }
 }
