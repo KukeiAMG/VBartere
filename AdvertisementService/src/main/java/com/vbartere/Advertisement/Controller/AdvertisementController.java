@@ -1,12 +1,13 @@
 package com.vbartere.Advertisement.Controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.vbartere.Advertisement.DTO.AdvertisementOwnerDTO;
 import com.vbartere.Advertisement.Model.Advertisement;
+import com.vbartere.Advertisement.Repository.AdvertisementRepository;
 import com.vbartere.Advertisement.Security.JwtService;
 import com.vbartere.Advertisement.Service.AdvertisementService;
 import com.vbartere.Advertisement.exceptions.InvalidTokenException;
 import com.vbartere.Shared.Kafka.DTO.Advertisement.AdvertisementDTO;
-import com.vbartere.Shared.Kafka.Enum.AdvertisementEventType;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,20 +17,22 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 @RestController
 @RequestMapping("/api/advertisements")
 public class AdvertisementController {
     private final AdvertisementService advertisementService;
     private final JwtService jwtService;
+    private final AdvertisementRepository advertisementRepository;
 
-    public AdvertisementController(AdvertisementService advertisementService, JwtService jwtService) {
+    public AdvertisementController(AdvertisementService advertisementService, JwtService jwtService, AdvertisementRepository advertisementRepository) {
         this.advertisementService = advertisementService;
         this.jwtService = jwtService;
+        this.advertisementRepository = advertisementRepository;
     }
 
     @GetMapping("/all")
@@ -47,6 +50,18 @@ public class AdvertisementController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @PostMapping("/owners")
+    public ResponseEntity<?> getAdvertisementsOwner(@RequestBody List<Long> advertisementIds) {
+        List<AdvertisementOwnerDTO> results = advertisementRepository.findAdOwners(advertisementIds);
+
+        Map<Long, Long> response = new HashMap<>();
+        for (AdvertisementOwnerDTO dto : results) {
+            response.put(dto.id(), dto.ownerId());
+        }
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping(value = "/create", consumes = {"multipart/form-data"})

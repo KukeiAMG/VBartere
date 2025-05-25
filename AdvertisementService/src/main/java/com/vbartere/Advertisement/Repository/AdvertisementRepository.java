@@ -1,5 +1,7 @@
 package com.vbartere.Advertisement.Repository;
 
+import com.vbartere.Advertisement.Controller.AdvertisementController;
+import com.vbartere.Advertisement.DTO.AdvertisementOwnerDTO;
 import com.vbartere.Advertisement.Model.Advertisement;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -21,4 +23,7 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
     List<Advertisement> findByBuyersIdAndStatusFalseWithImages(@Param("buyersId") Long buyersId);
 
     List<Advertisement> findAdvertisementsByOwnerId(Long ownerId);
+
+    @Query("SELECT new com.vbartere.Advertisement.DTO.AdvertisementOwnerDTO(a.id, a.ownerId) FROM Advertisement a WHERE a.id IN :ids")
+    List<AdvertisementOwnerDTO> findAdOwners(@Param("ids") List<Long> ids);
 }
