@@ -73,10 +73,12 @@ public class UserAdvertisementKafkaController {
 
             Map<Long, BigDecimal> advertisementsWithPrice = new HashMap<>();
             for (CartItemDTO cartItem : cartDTO.getAdvertisementIds()) {
-                advertisementsWithPrice.put(
-                        cartItem.getAdvertisementId(),
-                        cartItem.getPrice()
-                );
+                if (cartItem.getSelected()) {
+                    advertisementsWithPrice.put(
+                            cartItem.getAdvertisementId(),
+                            cartItem.getPrice()
+                    );
+                }
             }
 
             PaymentDTO paymentDTO = new PaymentDTO(
