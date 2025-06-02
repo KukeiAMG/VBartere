@@ -1,11 +1,16 @@
 package com.example.Referral.repository;
+import com.example.Referral.DTO.ParentChainDTO;
+import com.example.Referral.DTO.ReferralLevelCount;
 import com.example.Referral.model.UserNode;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 
+@Repository
 public interface ReferralRepository extends Neo4jRepository<UserNode, Long> {
 
     // создание пользователя
@@ -50,5 +55,26 @@ public interface ReferralRepository extends Neo4jRepository<UserNode, Long> {
     //Найти предка для потомка с UID
     @Query("MATCH (u:UserNode {referralCode: $referralCode}) RETURN u LIMIT 1")
     UserNode findUserByReferralCode(String referralCode);
+
+    /**Находит всех потомков до 15 уровней глубины
+     * Группирует их по уровню (длина пути)
+     * Считает количество пользователей на каждом уровне
+     * Возвращает список пар "уровень - количество"*/
+    @Query("MATCH path = (user:UserNode {userId: $userId})<-[:REFERRED_BY*1..15]-(descendant) " +
+            "WHERE descendant IS NOT NULL " +
+            "WITH length(path) AS level, count(descendant) AS count " +
+            "RETURN level, count " +
+            "ORDER BY level")
+    List<ReferralLevelCount> getChildrenCountByLevel(@Param("userId") Long userId);
+
+//    @Query("MATCH path = (user:UserNode {userId: $userId})<-[:REFERRED_BY*1..15]-(ancestor) " +
+//            "WITH ancestor, length(path) AS level " +
+//            "RETURN ancestor.userId AS userId, level " +
+//            "ORDER BY level")
+
+    @Query("MATCH path = (user:UserNode {userId: $userId})-[:REFERRED_BY*1..15]->(ancestor) "
+            + "RETURN ancestor as userNode, length(path) as level "
+            + "ORDER BY level")
+    List<ParentChainDTO> getParentChainWithLevels(@Param("userId") Long userId);
 }
 

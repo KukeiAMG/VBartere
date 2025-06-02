@@ -19,7 +19,7 @@ public class UserEventConsumer {
     }
 
     // Обработчик сообщений из топика user.registration.referral
-    @KafkaListener(topics = "user.registration.referral", groupId = "referral-service-group")
+    @KafkaListener(topics = "user.registration.referral")
     public void handleUserCreated(String userJSON) {
         System.out.println("\n\n---UserEventConsumer---\n" + userJSON);
 
